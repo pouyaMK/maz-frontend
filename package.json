@@ -17,6 +17,7 @@
     "formik": "^2.4.9",
     "framer-motion": "^13.1.1",
     "iconify": "^1.4.0",
+    "lucide-react": "^1.34.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-router-dom": "^7.18.2",
