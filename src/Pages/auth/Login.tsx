@@ -212,8 +212,7 @@ export default function Login() {
             shadow-[0_35px_100px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.25)]
             backdrop-blur-[28px]
             backdrop-saturate-150
-
-            sm:rounded-[32px]
+            sm:rounded-4xl
             sm:p-9
           "
         >
@@ -231,7 +230,7 @@ export default function Login() {
               h-px
               w-[75%]
               -translate-x-1/2
-              bg-gradient-to-r
+              bg-linear-to-r
               from-transparent
               via-white/70
               to-transparent
@@ -281,7 +280,7 @@ export default function Login() {
                 items-center
                 justify-center
                 rounded-[13px]
-                bg-gradient-to-br
+                bg-linear-to-br
                 from-[#055AFF]
                 to-[#1476FF]
                 text-xl
@@ -335,7 +334,7 @@ export default function Login() {
             <p
               className="
                 mx-auto
-                max-w-[330px]
+                max-w-82.5
                 text-[12px]
                 leading-7
                 text-white/60
@@ -364,9 +363,7 @@ export default function Login() {
                 ================================================== */}
 
                 <div>
-
                   <div className="group relative">
-
                     <Mail
                       size={20}
                       strokeWidth={1.8}
@@ -382,20 +379,19 @@ export default function Login() {
                         group-focus-within:text-[#055AFF]
                       "
                     />
-
                     <Field
                       name="email"
                       type="email"
                       placeholder="ایمیل یا شماره موبایل"
                       autoComplete="email"
                       className="
-                        h-[60px]
+                        h-15
                         w-full
-                        rounded-[16px]
+                        rounded-2xl
                         border
                         border-white/[0.16]
                         bg-white/[0.055]
-                        pr-[52px]
+                        pr-13
                         pl-5
                         text-sm
                         text-white
@@ -412,7 +408,7 @@ export default function Login() {
                         focus:ring-4
                         focus:ring-[#055AFF]/10
 
-                        sm:h-[62px]
+                        sm:h-15.5
                       "
                     />
 
@@ -461,30 +457,26 @@ export default function Login() {
                       placeholder="رمز عبور"
                       autoComplete="current-password"
                       className="
-                        h-[60px]
+                        h-15
                         w-full
-                        rounded-[16px]
+                        rounded-2xl
                         border
                         border-white/[0.16]
                         bg-white/[0.055]
-                        pr-[52px]
-                        pl-[55px]
+                        pr-13
+                        pl-
                         text-sm
                         text-white
                         outline-none
                         transition-all
                         duration-200
-
                         placeholder:text-white/45
-
                         hover:border-white/[0.25]
-
                         focus:border-[#055AFF]/80
                         focus:bg-white/[0.08]
                         focus:ring-4
                         focus:ring-[#055AFF]/10
-
-                        sm:h-[62px]
+                        sm:h-15.5
                       "
                     />
 
@@ -573,15 +565,15 @@ export default function Login() {
                     <span
                       className="
                         flex
-                        h-[21px]
-                        w-[21px]
+                        h-5.25
+                        w-5.25
                         shrink-0
                         items-center
                         justify-center
-                        rounded-[6px]
+                        rounded-md
                         border
                         border-white/30
-                        bg-white/[0.04]
+                        bg-white/4
                         transition-all
 
                         peer-checked:border-[#03D54A]
