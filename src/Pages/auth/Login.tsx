@@ -1,6 +1,7 @@
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
 import AnimatedMaze from "../../components/maze/AnimatedMaze";
+import { AnimatePresence, motion } from "motion/react";
 import {
   User,
   LockKeyhole,
@@ -9,7 +10,6 @@ import {
   ArrowLeft,
   Check,
 } from "lucide-react";
-
 import { useState } from "react";
 
 interface LoginValues {
@@ -37,6 +37,7 @@ const validationSchema = Yup.object({
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
+  const [mazeDone, setMazeDone] = useState(false);
 
   const handleSubmit = async (values: LoginValues) => {
     console.log("LOGIN:", values);
@@ -63,7 +64,10 @@ export default function Login() {
       "
     >
 
-<AnimatedMaze />
+{/* <AnimatedMaze /> */}
+<AnimatedMaze
+  onComplete={() => setMazeDone(true)}
+/>
 
         {/* <div
           className="
@@ -88,9 +92,44 @@ export default function Login() {
         </div> */}
 
 
-      {/* Dark overlay */}
 
-      <div
+<AnimatePresence>
+        {mazeDone && (
+          <motion.div
+            initial={{
+              opacity: 0,
+              y: 50,
+              scale: 0.94,
+              filter: "blur(12px)",
+            }}
+            animate={{
+              opacity: 1,
+              y: 0,
+              scale: 1,
+              filter: "blur(0px)",
+            }}
+            exit={{
+              opacity: 0,
+              y: -20,
+              scale: 0.98,
+              filter: "blur(8px)",
+            }}
+            transition={{
+              duration: 0.8,
+              delay: 0.15,
+              ease: [0.22, 1, 0.36, 1],
+            }}
+            className="
+              relative
+              z-20
+              flex
+              min-h-screen
+              items-center
+              justify-center
+            "
+          >
+            {/* LOGIN BOX شروع  */}
+            <div
         className="
           absolute
           inset-0
@@ -98,8 +137,6 @@ export default function Login() {
           bg-[#021373]/35
         "
       />
-
-      {/* Cinematic gradient */}
 
       <div
         className="
@@ -162,21 +199,33 @@ export default function Login() {
         <section
           className="
             relative
+            z-20
             w-full
-            max-w-100.5
+            max-w-100
             overflow-hidden
             rounded-[28px]
             border
-            border-white/20
-            bg-white/7.5
+            border-white/[0.14]
+            bg-[#202A58]/[0.28]
             p-5
-            shadow-[0_35px_100px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.25)]
-            backdrop-blur-[28px]
-            backdrop-saturate-150
+            shadow-[0_35px_100px_rgba(0,0,0,0.45)]
+            
+            backdrop-blur-[55px]
+            backdrop-saturate-100
             sm:rounded-4xl
             sm:p-9
           "
         >
+
+        <div
+            className="
+              pointer-events-none
+              absolute
+              inset-0
+              rounded-[28px]
+              bg-white/[0.20]
+            "
+          />
 
           <div
             className="
@@ -622,6 +671,13 @@ export default function Login() {
         </section>
 
       </div>
+           
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+
+    
     </main>
   );
 }

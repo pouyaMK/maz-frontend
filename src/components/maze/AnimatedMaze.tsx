@@ -8,7 +8,18 @@ const COLORS = {
   green: "#4CBC38",
 };
 
-function AnimatedPath({ path }: { path: MazePath }) {
+interface AnimatedMazeProps {
+  className?: string;
+  onComplete?: () => void;
+}
+
+function AnimatedPath({
+  path,
+  onComplete,
+}: {
+  path: MazePath;
+  onComplete?: () => void;
+}) {
   return (
     <motion.path
       d={path.d}
@@ -18,8 +29,14 @@ function AnimatedPath({ path }: { path: MazePath }) {
       strokeLinecap="round"
       strokeLinejoin="round"
       pathLength={1}
-      initial={{ pathLength: 0, opacity: 0 }}
-      animate={{ pathLength: 1, opacity: 1 }}
+      initial={{
+        pathLength: 0,
+        opacity: 0,
+      }}
+      animate={{
+        pathLength: 1,
+        opacity: 1,
+      }}
       transition={{
         pathLength: {
           duration: path.duration,
@@ -31,13 +48,15 @@ function AnimatedPath({ path }: { path: MazePath }) {
           delay: path.delay,
         },
       }}
+      onAnimationComplete={onComplete}
     />
   );
 }
 
 export default function AnimatedMaze({
   className = "",
-}: { className?: string }) {
+  onComplete,
+}: AnimatedMazeProps) {
   return (
     <svg
       viewBox="0 0 1247 829"
@@ -45,17 +64,35 @@ export default function AnimatedMaze({
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden="true"
-      className={`pointer-events-none absolute inset-0 h-full w-full ${className}`}
+      className={`
+        pointer-events-none
+        absolute
+        inset-0
+        h-full
+        w-full
+        ${className}
+      `}
     >
       <g>
         {bluePaths.map((path) => (
-          <AnimatedPath key={path.id} path={path} />
+          <AnimatedPath
+            key={path.id}
+            path={path}
+          />
         ))}
       </g>
 
       <g>
-        {greenPaths.map((path) => (
-          <AnimatedPath key={path.id} path={path} />
+        {greenPaths.map((path, index) => (
+          <AnimatedPath
+            key={path.id}
+            path={path}
+            onComplete={
+              index === greenPaths.length - 1
+                ? onComplete
+                : undefined
+            }
+          />
         ))}
       </g>
     </svg>
