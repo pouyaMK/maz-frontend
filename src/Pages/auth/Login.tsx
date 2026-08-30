@@ -309,6 +309,7 @@ export default function Login() {
             <p
               className="
                 mx-auto
+                font-semibold
                 max-w-82.5
                 text-[12px]
                 leading-7
