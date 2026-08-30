@@ -1,33 +1,33 @@
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
-
+import AnimatedMaze from "../../components/maze/AnimatedMaze";
 import {
-  Mail,
+  User,
   LockKeyhole,
   Eye,
   EyeOff,
   ArrowLeft,
-  Send,
   Check,
 } from "lucide-react";
 
 import { useState } from "react";
 
 interface LoginValues {
-  email: string;
+  username: string;
   password: string;
   remember: boolean;
 }
 
 const initialValues: LoginValues = {
-  email: "",
+  username: "",
   password: "",
   remember: false,
 };
 
 const validationSchema = Yup.object({
-  email: Yup.string()
-    .email("نام کاربری وارد شده معتبر نیست")
+  username: Yup.string()
+    .trim()
+    .min(3, "نام کاربری باید حداقل ۳ کاراکتر باشد")
     .required("نام کاربری الزامی است"),
 
   password: Yup.string()
@@ -62,12 +62,10 @@ export default function Login() {
       
       "
     >
-      {/* =====================================================
-          BACKGROUND
-      ====================================================== */}
 
-    
-        <div
+<AnimatedMaze />
+
+        {/* <div
           className="
             absolute
             inset-0
@@ -77,7 +75,7 @@ export default function Login() {
           "
         >
           <img
-            src="/maze-background.png"
+            src="/maz-traced.svg"
             alt=""
             aria-hidden="true"
             className="
@@ -87,7 +85,7 @@ export default function Login() {
               object-center
             "
           />
-        </div>
+        </div> */}
 
 
       {/* Dark overlay */}
@@ -111,11 +109,6 @@ export default function Login() {
           bg-[radial-gradient(circle_at_center,transparent_15%,rgba(2,19,115,0.30)_55%,rgba(2,19,115,0.72)_100%)]
         "
       />
-
-      {/* =====================================================
-          BLUE GLOW
-      ====================================================== */}
-
       <div
         className="
           pointer-events-none
@@ -128,15 +121,10 @@ export default function Login() {
           rounded-full
           bg-[#055AFF]/20
           blur-[130px]
-          sm:h-[520px]
-          sm:w-[520px]
+          sm:h-130
+          sm:w-130
         "
       />
-
-      {/* =====================================================
-          GREEN GLOW
-      ====================================================== */}
-
       <div
         className="
           pointer-events-none
@@ -154,16 +142,13 @@ export default function Login() {
         "
       />
 
-      {/* =====================================================
-          PAGE CONTENT
-      ====================================================== */}
 
       <div
         className="
           relative
           flex
           min-h-screen
-          min-h-[100svh]
+          min-h-screen
           w-full
           items-center
           justify-center
@@ -174,20 +159,16 @@ export default function Login() {
         "
       >
 
-        {/* =================================================
-            GLASS CARD
-        ================================================== */}
-
         <section
           className="
             relative
             w-full
-            max-w-[470px]
+            max-w-100.5
             overflow-hidden
             rounded-[28px]
             border
-            border-white/[0.20]
-            bg-white/[0.075]
+            border-white/20
+            bg-white/7.5
             p-5
             shadow-[0_35px_100px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.25)]
             backdrop-blur-[28px]
@@ -196,10 +177,6 @@ export default function Login() {
             sm:p-9
           "
         >
-
-          {/* =================================================
-              GLASS TOP LIGHT
-          ================================================== */}
 
           <div
             className="
@@ -217,9 +194,6 @@ export default function Login() {
             "
           />
 
-          {/* =================================================
-              INTERNAL BLUE GLOW
-          ================================================== */}
 
           <div
             className="
@@ -235,59 +209,32 @@ export default function Login() {
             "
           />
 
-          {/* =================================================
-              LOGO
-          ================================================== */}
-
-          <div
-            className="
-              relative
-              z-10
-              mb-7
-              flex
-              items-center
-              justify-center
-              gap-2.5
-              direction-ltr
-            "
-          >
-
+          <section>
             <div
               className="
+                relative
+                z-10
+                mb-5
                 flex
-                h-11
-                w-11
                 items-center
                 justify-center
-                rounded-[13px]
-                bg-linear-to-br
-                from-[#055AFF]
-                to-[#1476FF]
-                text-xl
-                font-black
-                text-white
-                shadow-[0_8px_30px_rgba(5,90,255,0.45)]
+                gap-2.5
+                direction-ltr
               "
             >
-              M
-            </div>
-
-            <span
+                    <img
+              src="/img/1.png"
+              alt="MAZ"
               className="
-                text-[25px]
-                font-extrabold
-                tracking-[2px]
-                text-white
+                h-12
+                w-auto
+                drop-shadow-[0_0_10px_rgba(255,255,255,1)]
+                drop-shadow-[0_0_25px_rgba(255,255,255,0.9)]
+                drop-shadow-[0_0_50px_rgba(255,255,255,0.65)]
+                drop-shadow-[0_0_80px_rgba(255,255,255,0.35)]
               "
-            >
-              MAZE
-            </span>
-
-          </div>
-
-          {/* =================================================
-              HEADER
-          ================================================== */}
+            />
+            </div>
 
           <div
             className="
@@ -297,7 +244,6 @@ export default function Login() {
               text-center
             "
           >
-
             <h1
               className="
                 mb-2
@@ -325,11 +271,7 @@ export default function Login() {
             </p>
 
           </div>
-
-          {/* =================================================
-              FORMIK
-          ================================================== */}
-
+          </section>
           <Formik
             initialValues={initialValues}
             validationSchema={validationSchema}
@@ -337,80 +279,65 @@ export default function Login() {
           >
             {({ isSubmitting }) => (
               <Form className="relative z-10 flex flex-col gap-4">
-
-                {/* =================================================
-                    EMAIL
-                ================================================== */}
-
-                <div>
-                  <div className="group relative">
-                    <Mail
-                      size={20}
-                      strokeWidth={1.8}
-                      className="
-                        pointer-events-none
-                        absolute
-                        right-4
-                        top-1/2
-                        z-10
-                        -translate-y-1/2
-                        text-white/65
-                        transition-colors
-                        group-focus-within:text-[#055AFF]
-                      "
-                    />
-                    <Field
-                      name="email"
-                      type="email"
-                      placeholder="نام کاربری"
-                      autoComplete="email"
-                      className="
-                        h-15
-                        w-full
-                        rounded-2xl
-                        border
-                        border-white/[0.16]
-                        bg-white/[0.055]
-                        pr-13
-                        pl-5
-                        text-sm
-                        text-white
-                        outline-none
-                        transition-all
-                        duration-200
-
-                        placeholder:text-white/45
-
-                        hover:border-white/[0.25]
-
-                        focus:border-[#055AFF]/80
-                        focus:bg-white/[0.08]
-                        focus:ring-4
-                        focus:ring-[#055AFF]/10
-
-                        sm:h-15.5
-                      "
-                    />
-
-                  </div>
-
-                  <ErrorMessage
-                    name="email"
-                    component="p"
+              <div>
+                <div className="group relative">
+                  <User
+                    size={20}
+                    strokeWidth={1.8}
                     className="
-                      mt-1.5
-                      pr-1
-                      text-[11px]
-                      text-red-300
+                      pointer-events-none
+                      absolute
+                      right-4
+                      top-1/2
+                      z-10
+                      -translate-y-1/2
+                      text-white/65
+                      transition-colors
+                      group-focus-within:text-[#055AFF]
                     "
                   />
 
+                  <Field
+                    name="username"
+                    type="text"
+                    placeholder="نام کاربری"
+                    autoComplete="username"
+                    className="
+                      h-15
+                      w-full
+                      rounded-2xl
+                      border
+                      border-white/16
+                      bg-white/5.5
+                      pr-13
+                      pl-5
+                      text-sm
+                      text-white
+                      outline-none
+                      transition-all
+                      duration-200
+                      placeholder:text-white/45
+                      hover:border-white/25
+                      focus:border-[#055AFF]/80
+                      focus:bg-white/8
+                      focus:ring-4
+                      focus:ring-[#055AFF]/10
+                      sm:h-[15.5
+                    "
+                  />
                 </div>
 
-                {/* =================================================
-                    PASSWORD
-                ================================================== */}
-
+                <ErrorMessage
+                  name="username"
+                  component="p"
+                  className="
+                    mt-1.5
+                    pr-1
+                    text-[11px]
+                    text-red-300
+                  "
+                />
+              </div>
                 <div>
 
                   <div className="group relative">
@@ -441,8 +368,8 @@ export default function Login() {
                         w-full
                         rounded-2xl
                         border
-                        border-white/[0.16]
-                        bg-white/[0.055]
+                        border-white/16
+                        bg-white/5.5
                         pr-13
                         pl-
                         text-sm
@@ -451,9 +378,9 @@ export default function Login() {
                         transition-all
                         duration-200
                         placeholder:text-white/45
-                        hover:border-white/[0.25]
+                        hover:border-white/25
                         focus:border-[#055AFF]/80
-                        focus:bg-white/[0.08]
+                        focus:bg-white/8
                         focus:ring-4
                         focus:ring-[#055AFF]/10
                         sm:h-15.5
@@ -507,11 +434,6 @@ export default function Login() {
                   />
 
                 </div>
-
-                {/* =================================================
-                    OPTIONS
-                ================================================== */}
-
                 <div
                   className="
                     flex
@@ -522,9 +444,6 @@ export default function Login() {
                     sm:text-xs
                   "
                 >
-
-                  {/* Remember */}
-
                   <label
                     className="
                       flex
@@ -598,11 +517,6 @@ export default function Login() {
                   </button>
 
                 </div>
-
-                {/* =================================================
-                    SUBMIT
-                ================================================== */}
-
                 <button
                   type="submit"
                   disabled={isSubmitting}
@@ -612,13 +526,13 @@ export default function Login() {
                     cursor-pointer
                     mt-1
                     flex
-                    h-[60px]
+                    h-15
                     w-full
                     items-center
                     justify-center
                     overflow-hidden
-                    rounded-[16px]
-                    bg-gradient-to-l
+                    rounded-2xl
+                    bg-linear-to-l
                     from-[#055AFF]
                     via-[#00C978]
                     to-[#03D54A]
@@ -633,11 +547,9 @@ export default function Login() {
                     active:translate-y-0
                     disabled:cursor-not-allowed
                     disabled:opacity-70
-                    sm:h-[62px]
+                    sm:h-15.5
                   "
                 >
-
-                  {/* Shine */}
 
                   <span
                     className="
@@ -646,7 +558,7 @@ export default function Login() {
                       -left-1/2
                       w-1/3
                       skew-x-[-20deg]
-                      bg-gradient-to-r
+                      bg-linear-to-r
                       from-transparent
                       via-white/25
                       to-transparent
@@ -676,10 +588,6 @@ export default function Login() {
 
                 </button>
 
-                {/* =================================================
-                    DIVIDER
-                ================================================== */}
-
                 <div
                   className="
                     my-1
@@ -688,7 +596,7 @@ export default function Login() {
                     gap-3
                   "
                 >
-                  <span className="h-px flex-1 bg-white/[0.13]" />
+                  <span className="h-px flex-1 bg-white/13" />
 
                   <p
                     className="
@@ -700,7 +608,7 @@ export default function Login() {
                     ورود به اکانت داشبرد ماز 
                   </p>
 
-                  <span className="h-px flex-1 bg-white/[0.13]" />
+                  <span className="h-px flex-1 bg-white/13" />
 
                 </div>
 
