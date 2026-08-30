@@ -272,7 +272,7 @@ export default function Login() {
               "
             >
                     <img
-              src="/img/1.png"
+              src="/img/logo-landing.png"
               alt="MAZ"
               className="
                 h-12
