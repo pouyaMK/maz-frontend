@@ -27,8 +27,8 @@ const initialValues: LoginValues = {
 
 const validationSchema = Yup.object({
   email: Yup.string()
-    .email("ایمیل وارد شده معتبر نیست")
-    .required("ایمیل الزامی است"),
+    .email("نام کاربری وارد شده معتبر نیست")
+    .required("نام کاربری الزامی است"),
 
   password: Yup.string()
     .min(6, "رمز عبور باید حداقل ۶ کاراکتر باشد")
@@ -66,27 +66,7 @@ export default function Login() {
           BACKGROUND
       ====================================================== */}
 
-      {/* <picture className="absolute inset-0 -z-30 block h-full w-full">
- 
-        <source
-          media="(max-width: 640px)"
-          srcSet="/maze-background-desktop.png"
-        />
-
-
-        <img
-          src="/maze-background-desktop.png"
-          alt=""
-          aria-hidden="true"
-          className="
-            h-full
-            w-full
-            object-cover
-            object-center
-            scale-[1.02]
-          "
-        />
-      </picture> */}
+    
         <div
           className="
             absolute
@@ -382,7 +362,7 @@ export default function Login() {
                     <Field
                       name="email"
                       type="email"
-                      placeholder="ایمیل یا شماره موبایل"
+                      placeholder="نام کاربری"
                       autoComplete="email"
                       className="
                         h-15
@@ -717,158 +697,19 @@ export default function Login() {
                       text-white/40
                     "
                   >
-                    یا با حساب‌های دیگر وارد شوید
+                    ورود به اکانت داشبرد ماز 
                   </p>
 
                   <span className="h-px flex-1 bg-white/[0.13]" />
 
                 </div>
 
-                {/* =================================================
-                    SOCIAL LOGIN
-                ================================================== */}
-
-                <div
-                  className="
-                    grid
-                    grid-cols-3
-                    gap-2.5
-                  "
-                >
-
-                  {/* Telegram */}
-
-                  <button
-                    type="button"
-                    aria-label="ورود با تلگرام"
-                    className="
-                      flex
-                      h-[52px]
-                      items-center
-                      justify-center
-                      rounded-[14px]
-                      border
-                      border-white/[0.15]
-                      bg-white/[0.045]
-                      text-white/75
-                      backdrop-blur-xl
-                      transition-all
-                      hover:-translate-y-0.5
-                      hover:border-[#229ED9]/50
-                      hover:bg-[#229ED9]/10
-                      hover:text-[#229ED9]
-                    "
-                  >
-                    <Send size={20} strokeWidth={1.8} />
-                  </button>
-
-                  {/* Apple */}
-
-                  <button
-                    type="button"
-                    aria-label="ورود با اپل"
-                    className="
-                      flex
-                      h-[52px]
-                      items-center
-                      justify-center
-                      rounded-[14px]
-                      border
-                      border-white/[0.15]
-                      bg-white/[0.045]
-                      text-white/80
-                      backdrop-blur-xl
-                      transition-all
-                      hover:-translate-y-0.5
-                      hover:border-white/30
-                      hover:bg-white/10
-                      hover:text-white
-                    "
-                  >
-                    <svg
-                      viewBox="0 0 24 24"
-                      className="h-5 w-5 fill-current"
-                      aria-hidden="true"
-                    >
-                      <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.97.48 7.12-.57 1.5-1.31 2.99-2.53 4.09zM12.03 7.25C11.88 5.02 13.69 3.18 15.77 3c.29 2.58-2.34 4.5-3.74 4.25z" />
-                    </svg>
-                  </button>
-
-                  {/* Google */}
-
-                  <button
-                    type="button"
-                    aria-label="ورود با گوگل"
-                    className="
-                      flex
-                      h-[52px]
-                      items-center
-                      justify-center
-                      rounded-[14px]
-                      border
-                      border-white/[0.15]
-                      bg-white/[0.045]
-                      text-[19px]
-                      font-bold
-                      text-white
-                      backdrop-blur-xl
-                      transition-all
-                      hover:-translate-y-0.5
-                      hover:border-white/30
-                      hover:bg-white/10
-                    "
-                  >
-                    G
-                  </button>
-
-                </div>
-
+                
               </Form>
             )}
           </Formik>
 
-          {/* =================================================
-              REGISTER
-          ================================================== */}
-
-          <div
-            className="
-              relative
-              z-10
-              mt-6
-              flex
-              items-center
-              justify-center
-              gap-1.5
-              text-[11px]
-              text-white/50
-              sm:mt-7
-              sm:text-xs
-            "
-          >
-
-            <span>
-              حساب کاربری ندارید؟
-            </span>
-
-            <button
-              type="button"
-              className="
-                border-none
-                bg-transparent
-                p-0
-                font-inherit
-                font-medium
-                text-[#03D54A]
-                transition
-                hover:text-[#58ed88]
-                hover:underline
-              "
-            >
-              ثبت‌نام کنید
-            </button>
-
-          </div>
+    
 
         </section>
 
