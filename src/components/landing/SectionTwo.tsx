@@ -46,10 +46,17 @@ const SectionTwo = () => {
           absolute
           inset-0
           z-0
-          h-full
+          h-[700px]
+          md:h-[990px]
           w-full
+          md:text-center 
+          flex 
+          justify-center
+          mx-auto!
+          items-center  
+          md:max-w-[900px]
           overflow-visible
-          top-[10px]
+          top-60.5
         "
       >
 
