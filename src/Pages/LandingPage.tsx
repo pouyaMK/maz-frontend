@@ -1,6 +1,7 @@
 
 import { useEffect, useRef, useState, type JSX } from "react";
 import { useParams } from "react-router-dom";
+import { motion, type Variants } from "framer-motion";
 import { Button } from "../components/button";
 import {
   getInvite,
@@ -13,13 +14,110 @@ const DESIGN_WIDTH = 1920;
 const DESIGN_HEIGHT = 3841;
 
 // ضریب بزرگ‌نمایی مخصوص موبایل
-// هرچه بیشتر باشد، المان‌ها روی گوشی بزرگ‌تر دیده می‌شوند.
 const MOBILE_SCALE = 1.18;
+
+// --------------------------------------------------
+// Animation Variants
+// --------------------------------------------------
+
+const fadeUp: Variants = {
+  hidden: {
+    opacity: 0,
+    y: 45,
+    filter: "blur(10px)",
+  },
+  visible: {
+    opacity: 1,
+    y: 0,
+    filter: "blur(0px)",
+    transition: {
+      duration: 0.9,
+      ease: [0.22, 1, 0.36, 1],
+    },
+  },
+};
+
+const fadeUpSlow: Variants = {
+  hidden: {
+    opacity: 0,
+    y: 70,
+    scale: 0.96,
+    filter: "blur(14px)",
+  },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    filter: "blur(0px)",
+    transition: {
+      duration: 1.15,
+      ease: [0.22, 1, 0.36, 1],
+    },
+  },
+};
+
+const fadeScale: Variants = {
+  hidden: {
+    opacity: 0,
+    scale: 0.78,
+    filter: "blur(12px)",
+  },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    filter: "blur(0px)",
+    transition: {
+      duration: 1.1,
+      ease: [0.16, 1, 0.3, 1],
+    },
+  },
+};
+
+const imageReveal: Variants = {
+  hidden: {
+    opacity: 0,
+    scale: 0.92,
+    y: 35,
+    filter: "blur(8px)",
+  },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    y: 0,
+    filter: "blur(0px)",
+    transition: {
+      duration: 1.1,
+      ease: [0.22, 1, 0.36, 1],
+    },
+  },
+};
+
+const buttonReveal: Variants = {
+  hidden: {
+    opacity: 0,
+    scale: 0.75,
+    y: 25,
+  },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    y: 0,
+    transition: {
+      duration: 0.65,
+      ease: [0.22, 1, 0.36, 1],
+    },
+  },
+};
+
+// --------------------------------------------------
+// Decorative Assets
+// --------------------------------------------------
 
 const decorativeAssets = [
   {
     alt: "Vector",
-    className: "absolute left-0 top-0 h-[113.93%] w-[100.63%]",
+    className:
+      "absolute left-0 top-0 h-[113.93%] w-[100.63%]",
     src: "https://c.animaapp.com/yMsQIt4gcRaRivWzIussoA/img/vector.svg",
   },
   {
@@ -47,6 +145,10 @@ const decorativeAssets = [
     src: "https://c.animaapp.com/yMsQIt4gcRaRivWzIussoA/img/vector-2.svg",
   },
 ];
+
+// --------------------------------------------------
+// Illustration Assets
+// --------------------------------------------------
 
 const illustrationAssets = [
   {
@@ -93,6 +195,10 @@ const illustrationAssets = [
   },
 ];
 
+// --------------------------------------------------
+// Attendance
+// --------------------------------------------------
+
 const attendanceOptions: {
   id: "accept" | "decline";
   label: string;
@@ -112,10 +218,16 @@ const attendanceOptions: {
   },
 ];
 
-// ویدیوی کاور
+// --------------------------------------------------
+// Video
+// --------------------------------------------------
+
 const COVER_VIDEO_SRC = "/videos/section2.mp4";
 
-// برای اینکه روی موبایل Canvas بیشتر از عرض صفحه را بگیرد
+// --------------------------------------------------
+// Responsive Scale
+// --------------------------------------------------
+
 const getResponsiveScale = () => {
   if (typeof window === "undefined") {
     return 1;
@@ -123,17 +235,18 @@ const getResponsiveScale = () => {
 
   const width = window.innerWidth;
 
-  // دسکتاپ: طراحی اصلی
   if (width >= 768) {
     return 1;
   }
 
-  // موبایل
-  // Canvas نسبت به عرض گوشی بزرگ‌تر می‌شود.
   const baseScale = width / DESIGN_WIDTH;
 
   return baseScale * MOBILE_SCALE;
 };
+
+// --------------------------------------------------
+// Landing Page
+// --------------------------------------------------
 
 export const LandingPage = (): JSX.Element => {
   const { slug } = useParams<{ slug: string }>();
@@ -155,9 +268,10 @@ export const LandingPage = (): JSX.Element => {
 
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  // -----------------------------
-  // Responsive Scale
-  // -----------------------------
+  // --------------------------------------------------
+  // Responsive
+  // --------------------------------------------------
+
   useEffect(() => {
     const updateScale = () => {
       setScale(getResponsiveScale());
@@ -172,9 +286,10 @@ export const LandingPage = (): JSX.Element => {
     };
   }, []);
 
-  // -----------------------------
-  // گرفتن اطلاعات دعوت‌نامه
-  // -----------------------------
+  // --------------------------------------------------
+  // Get Invite
+  // --------------------------------------------------
+
   useEffect(() => {
     if (!slug) {
       setLoadError("لینک دعوت‌نامه نامعتبر است.");
@@ -216,9 +331,10 @@ export const LandingPage = (): JSX.Element => {
     };
   }, [slug]);
 
-  // -----------------------------
+  // --------------------------------------------------
   // RSVP
-  // -----------------------------
+  // --------------------------------------------------
+
   const handleAttendance = async (
     choice: "accept" | "decline",
   ) => {
@@ -259,12 +375,9 @@ export const LandingPage = (): JSX.Element => {
         height: DESIGN_HEIGHT * scale,
       }}
     >
-      {/* 
-        Canvas اصلی.
-        تمام المان‌ها داخل این container هستند،
-        بنابراین با scale همگی با یک نسبت بزرگ/کوچک می‌شوند.
-      */}
-      <div
+      <motion.div
+        initial="hidden"
+        animate="visible"
         className="relative shrink-0 origin-top overflow-hidden"
         style={{
           width: DESIGN_WIDTH,
@@ -272,65 +385,110 @@ export const LandingPage = (): JSX.Element => {
           transform: `scale(${scale})`,
         }}
       >
-        {/* -----------------------------
-            Decorative Assets
-        ----------------------------- */}
+        {/* ==================================================
+            DECORATIVE SVGs
+        ================================================== */}
 
-        {decorativeAssets.map((asset) => (
-          <img
+        {decorativeAssets.map((asset, index) => (
+          <motion.div
             key={asset.src}
             className={asset.className}
-            alt={asset.alt}
-            src={asset.src}
-          />
+            initial={{
+              opacity: 0,
+              clipPath: "inset(100% 0 0 0)",
+            }}
+            animate={{
+              opacity: 1,
+              clipPath: "inset(0% 0 0 0)",
+            }}
+            transition={{
+              duration: 1.8,
+              delay: index * 0.22,
+              ease: [0.22, 1, 0.36, 1],
+            }}
+          >
+            <img
+              className="h-full w-full"
+              alt={asset.alt}
+              src={asset.src}
+            />
+          </motion.div>
         ))}
 
-        {/* -----------------------------
-            Top Illustrations
-        ----------------------------- */}
+        {/* ==================================================
+            TOP ILLUSTRATIONS
+        ================================================== */}
 
-        {illustrationAssets.slice(0, 3).map((asset) => (
-          <img
-            key={asset.src}
-            className={asset.className}
-            alt={asset.alt}
-            src={asset.src}
-          />
-        ))}
+        {illustrationAssets.slice(0, 3).map(
+          (asset, index) => (
+            <motion.img
+              key={asset.src}
+              className={asset.className}
+              alt={asset.alt}
+              src={asset.src}
+              variants={imageReveal}
+              custom={index}
+              initial="hidden"
+              animate="visible"
+              transition={{
+                delay: 0.8 + index * 0.2,
+              }}
+            />
+          ),
+        )}
 
-        {/* -----------------------------
-            Invitation Text
-        ----------------------------- */}
+        {/* ==================================================
+            INVITATION
+        ================================================== */}
 
-        <section
+        <motion.section
           className="absolute left-[calc(50%_-_260px)] top-[1520px] w-[520px] text-center"
           style={{ direction: "rtl" }}
+          variants={fadeUpSlow}
+          initial="hidden"
+          animate="visible"
+          transition={{
+            delay: 1.15,
+          }}
           aria-labelledby="invitation-title"
         >
-          <h1
+          <motion.h1
             id="invitation-title"
             className="absolute -top-[59px] left-1/2 w-full -translate-x-1/2 whitespace-nowrap text-[26.4px] font-semibold leading-[normal] text-white"
+            variants={fadeUp}
           >
             {loading
               ? "در حال بارگذاری…"
               : `${displayName} عزیز 🌱`}
-          </h1>
+          </motion.h1>
 
-          <p className="text-xl font-normal leading-[30px] text-white">
+          <motion.p
+            className="text-xl font-normal leading-[30px] text-white"
+            variants={fadeUp}
+            transition={{
+              delay: 0.2,
+            }}
+          >
             خیلی خوشحال می‌شیم شما رو در جشن اورست ماز ببینیم؛
             جشنی که به مناسبت رسیدن ماز به قله آموزش کشور برگزار
             میشه. در مسیر این موفقیت، تک‌تک همراهان ماز، از جمله
             شما، سهیم بودید و دوست داریم این اتفاق بزرگ رو کنار
             هم جشن بگیریم.
-          </p>
-        </section>
+          </motion.p>
+        </motion.section>
 
-        {/* -----------------------------
-            Video
-        ----------------------------- */}
+        {/* ==================================================
+            VIDEO
+        ================================================== */}
 
-        <div
+        <motion.div
           className="absolute left-[calc(50%_-_132px)] top-[1870px] h-[369px] w-[264px] overflow-hidden rounded-[26px] bg-black"
+          variants={fadeScale}
+          initial="hidden"
+          animate="visible"
+          transition={{
+            delay: 1.45,
+          }}
         >
           <video
             ref={videoRef}
@@ -355,26 +513,40 @@ export const LandingPage = (): JSX.Element => {
               playsInline
             />
           )}
-        </div>
+        </motion.div>
 
-        {/* Video Name */}
+        {/* ==================================================
+            VIDEO NAME
+        ================================================== */}
 
         {!loading && (
-          <p
+          <motion.p
             className="absolute left-[calc(50%_-_132px)] top-[2249px] w-[264px] text-center text-base font-medium text-white"
             style={{ direction: "rtl" }}
+            variants={fadeUp}
+            initial="hidden"
+            animate="visible"
+            transition={{
+              delay: 1.75,
+            }}
           >
             {displayName}
-          </p>
+          </motion.p>
         )}
 
-        {/* -----------------------------
-            Attendance Instructions
-        ----------------------------- */}
+        {/* ==================================================
+            ATTENDANCE TEXT
+        ================================================== */}
 
-        <section
+        <motion.section
           className="absolute left-[calc(50%_-_267px)] top-[2272px] w-[533px] text-center"
           style={{ direction: "rtl" }}
+          variants={fadeUpSlow}
+          initial="hidden"
+          animate="visible"
+          transition={{
+            delay: 1.85,
+          }}
           aria-label="راهنمای حضور"
         >
           <p className="text-xl font-normal leading-[normal] text-white">
@@ -384,15 +556,21 @@ export const LandingPage = (): JSX.Element => {
             همکاری‌تون به ما کمک می‌کنید تا میزبان خوبی براتون
             باشیم.
           </p>
-        </section>
+        </motion.section>
 
-        {/* -----------------------------
-            Date & Location
-        ----------------------------- */}
+        {/* ==================================================
+            DATE / LOCATION
+        ================================================== */}
 
-        <section
+        <motion.section
           className="absolute left-[calc(50%_-_198px)] top-[2439px] w-[398px] text-center"
           style={{ direction: "rtl" }}
+          variants={fadeUpSlow}
+          initial="hidden"
+          animate="visible"
+          transition={{
+            delay: 2.05,
+          }}
           aria-label="زمان و مکان مراسم"
         >
           <p className="text-[23.3px] font-normal leading-[normal] text-white">
@@ -413,14 +591,20 @@ export const LandingPage = (): JSX.Element => {
             شما هستند. برای پارک خودرو شخصی‌تون هم می‌توانید از
             پارکینگ جنوبی نمایشگاه استفاده کنید.
           </p>
-        </section>
+        </motion.section>
 
-        {/* -----------------------------
-            Map
-        ----------------------------- */}
+        {/* ==================================================
+            MAP
+        ================================================== */}
 
-        <button
+        <motion.button
           type="button"
+          variants={fadeScale}
+          initial="hidden"
+          animate="visible"
+          transition={{
+            delay: 2.25,
+          }}
           onClick={() =>
             window.open(
               "https://maps.app.goo.gl/7KhUzJXBzJSDo5Tm7",
@@ -431,40 +615,62 @@ export const LandingPage = (): JSX.Element => {
           className="absolute left-[calc(50%_-_190px)] top-[2668px] h-[254px] w-[400px] overflow-hidden rounded-[16px] border-0 p-0"
           aria-label="نمایش نقشه مسیر روی گوگل مپ"
         >
-          <img
+          <motion.img
             src="https://c.animaapp.com/yMsQIt4gcRaRivWzIussoA/img/image-1.png"
             alt="نقشه مسیر"
             className="h-full w-full object-cover"
+            whileHover={{
+              scale: 1.04,
+            }}
+            transition={{
+              duration: 0.35,
+            }}
           />
-        </button>
+        </motion.button>
 
-        {/* -----------------------------
-            Navigation Button
-        ----------------------------- */}
+        {/* ==================================================
+            NAVIGATION BUTTON
+        ================================================== */}
 
-        <Button
-          type="button"
-          variant="secondary"
-          className="absolute left-[calc(50%_-_158px)] top-[2950px] h-[27px] w-[90px] rounded-[10.25px] bg-[#d9d9d9] p-0 text-[15.9px] font-normal text-black hover:bg-[#d9d9d9]/90"
-          dir="rtl"
-          onClick={() =>
-            window.open(
-              "https://maps.app.goo.gl/7KhUzJXBzJSDo5Tm7",
-              "_blank",
-              "noopener",
-            )
-          }
+        <motion.div
+          className="absolute left-[calc(50%_-_158px)] top-[2950px]"
+          variants={buttonReveal}
+          initial="hidden"
+          animate="visible"
+          transition={{
+            delay: 2.45,
+          }}
         >
-          مسیریابی
-        </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            className="h-[27px] w-[90px] rounded-[10.25px] bg-[#d9d9d9] p-0 text-[15.9px] font-normal text-black hover:bg-[#d9d9d9]/90"
+            dir="rtl"
+            onClick={() =>
+              window.open(
+                "https://maps.app.goo.gl/7KhUzJXBzJSDo5Tm7",
+                "_blank",
+                "noopener",
+              )
+            }
+          >
+            مسیریابی
+          </Button>
+        </motion.div>
 
-        {/* -----------------------------
-            RSVP Question
-        ----------------------------- */}
+        {/* ==================================================
+            RSVP QUESTION
+        ================================================== */}
 
-        <section
+        <motion.section
           className="absolute left-[calc(50%_-_158px)] top-[3004px] w-[306px] text-center"
           style={{ direction: "rtl" }}
+          variants={fadeUp}
+          initial="hidden"
+          animate="visible"
+          transition={{
+            delay: 2.6,
+          }}
           aria-labelledby="attendance-question"
         >
           <h2
@@ -473,93 +679,162 @@ export const LandingPage = (): JSX.Element => {
           >
             راستی، اگر بهمون بگی می‌تونی بیای یا نه ممنون میشیم.
           </h2>
-        </section>
+        </motion.section>
 
-        {/* -----------------------------
-            RSVP Buttons
-        ----------------------------- */}
+        {/* ==================================================
+            RSVP BUTTONS
+        ================================================== */}
 
-        <div
+        <motion.div
           className="absolute left-[calc(50%_-_166px)] top-[3079px] flex w-[335px] justify-between"
           dir="rtl"
           role="group"
           aria-label="پاسخ حضور در مراسم"
+          variants={fadeUpSlow}
+          initial="hidden"
+          animate="visible"
+          transition={{
+            delay: 2.8,
+          }}
         >
           {attendanceOptions.map((option) => (
-            <Button
+            <motion.div
               key={option.id}
-              type="button"
-              variant="ghost"
-              disabled={rsvpSubmitting || loading}
-              aria-pressed={attendance === option.id}
-              onClick={() => handleAttendance(option.id)}
-              className={option.className}
+              whileHover={{
+                scale: 1.06,
+                y: -3,
+              }}
+              whileTap={{
+                scale: 0.94,
+              }}
             >
-              {option.label}
-            </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                disabled={rsvpSubmitting || loading}
+                aria-pressed={attendance === option.id}
+                onClick={() =>
+                  handleAttendance(option.id)
+                }
+                className={option.className}
+              >
+                {option.label}
+              </Button>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
 
-        {/* -----------------------------
-            RSVP Error
-        ----------------------------- */}
+        {/* ==================================================
+            RSVP ERROR
+        ================================================== */}
 
         {rsvpError && (
-          <p
+          <motion.p
             className="absolute left-[calc(50%_-_150px)] top-[3140px] w-[300px] text-center text-sm text-red-300"
             style={{ direction: "rtl" }}
+            initial={{
+              opacity: 0,
+              y: 10,
+            }}
+            animate={{
+              opacity: 1,
+              y: 0,
+            }}
           >
             {rsvpError}
-          </p>
+          </motion.p>
         )}
 
-        {/* -----------------------------
-            Accepted Message
-        ----------------------------- */}
+        {/* ==================================================
+            ACCEPT MESSAGE
+        ================================================== */}
 
         {attendance === "accept" && (
           <>
-            <p
+            <motion.p
               className="absolute left-[calc(50%_-_125px)] top-[3166px] w-[249px] text-center text-xl font-medium leading-[normal] text-white"
               style={{ direction: "rtl" }}
+              initial={{
+                opacity: 0,
+                y: 25,
+                scale: 0.9,
+              }}
+              animate={{
+                opacity: 1,
+                y: 0,
+                scale: 1,
+              }}
+              transition={{
+                duration: 0.65,
+              }}
             >
               عالی؛ پس همدیگه رو می‌بینیم
-            </p>
+            </motion.p>
 
-            <img
+            <motion.img
               className="absolute left-[calc(50%_-_14px)] top-[3211px] h-7 w-7"
               alt="Line md confirm"
               src="https://c.animaapp.com/yMsQIt4gcRaRivWzIussoA/img/line-md-confirm-circle-filled.svg"
+              initial={{
+                opacity: 0,
+                scale: 0,
+                rotate: -90,
+              }}
+              animate={{
+                opacity: 1,
+                scale: 1,
+                rotate: 0,
+              }}
+              transition={{
+                duration: 0.7,
+                ease: [0.34, 1.56, 0.64, 1],
+              }}
             />
           </>
         )}
 
-        {/* -----------------------------
-            Loading / API Error
-        ----------------------------- */}
+        {/* ==================================================
+            LOAD ERROR
+        ================================================== */}
 
         {loadError && (
-          <p
+          <motion.p
             className="absolute left-[calc(50%_-_200px)] top-[400px] w-[400px] text-center text-lg text-red-300"
             style={{ direction: "rtl" }}
+            initial={{
+              opacity: 0,
+              y: -20,
+            }}
+            animate={{
+              opacity: 1,
+              y: 0,
+            }}
           >
             {loadError}
-          </p>
+          </motion.p>
         )}
 
-        {/* -----------------------------
-            Bottom Illustrations
-        ----------------------------- */}
+        {/* ==================================================
+            BOTTOM ILLUSTRATIONS
+        ================================================== */}
 
-        {illustrationAssets.slice(3).map((asset) => (
-          <img
-            key={asset.src}
-            className={asset.className}
-            alt={asset.alt}
-            src={asset.src}
-          />
-        ))}
-      </div>
+        {illustrationAssets.slice(3).map(
+          (asset, index) => (
+            <motion.img
+              key={asset.src}
+              className={asset.className}
+              alt={asset.alt}
+              src={asset.src}
+              variants={imageReveal}
+              initial="hidden"
+              animate="visible"
+              transition={{
+                delay: 2.1 + index * 0.22,
+              }}
+            />
+          ),
+        )}
+      </motion.div>
     </main>
   );
 };
