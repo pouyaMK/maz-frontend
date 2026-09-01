@@ -335,33 +335,62 @@ export const LandingPage = (): JSX.Element => {
   // RSVP
   // --------------------------------------------------
 
-  const handleAttendance = async (
-    choice: "accept" | "decline",
-  ) => {
-    if (!slug || rsvpSubmitting) return;
+  // const handleAttendance = async (
+  //   choice: "accept" | "decline",
+  // ) => {
+  //   if (!slug || rsvpSubmitting) return;
 
-    setRsvpError(null);
-    setRsvpSubmitting(true);
+  //   setRsvpError(null);
+  //   setRsvpSubmitting(true);
 
-    const previous = attendance;
+  //   const previous = attendance;
 
+  //   setAttendance(choice);
+
+  //   try {
+  //     const updated = await submitRsvp(slug, {
+  //       attending: choice === "accept",
+  //     });
+
+  //     setInvite(updated);
+  //   } catch {
+  //     setAttendance(previous);
+  //     setRsvpError(
+  //       "ثبت پاسخ با مشکل مواجه شد، لطفاً دوباره تلاش کنید.",
+  //     );
+  //   } finally {
+  //     setRsvpSubmitting(false);
+  //   }
+  // };
+
+  
+const handleAttendance = async (
+  choice: "accept" | "decline",
+) => {
+  if (!slug || rsvpSubmitting) return;
+
+  setRsvpError(null);
+  setRsvpSubmitting(true);
+
+  try {
+    const updated = await submitRsvp(slug, {
+      attending: choice === "accept",
+    });
+
+    // فقط بعد از موفقیت واقعی API وضعیت را تغییر بده
+    setInvite(updated);
     setAttendance(choice);
+  } catch {
+    // در صورت خطا، وضعیت قبلی دست‌نخورده می‌ماند
+    setRsvpError(
+      "ثبت پاسخ با مشکل مواجه شد، لطفاً دوباره تلاش کنید.",
+    );
+  } finally {
+    setRsvpSubmitting(false);
+  }
+};
 
-    try {
-      const updated = await submitRsvp(slug, {
-        attending: choice === "accept",
-      });
 
-      setInvite(updated);
-    } catch {
-      setAttendance(previous);
-      setRsvpError(
-        "ثبت پاسخ با مشکل مواجه شد، لطفاً دوباره تلاش کنید.",
-      );
-    } finally {
-      setRsvpSubmitting(false);
-    }
-  };
 
   const displayName = invite?.name ?? "مهمان عزیز";
 
