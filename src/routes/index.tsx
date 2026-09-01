@@ -47,11 +47,31 @@ const router = createBrowserRouter([
     errorElement: <div>Page Not Found</div>,
   },
 
+  // مسیر ریشه (بدون اسلاگ): هیچ مهمونی مشخص نیست، پس همیشه پیام نامعتبر بودن
+  // لینک نشون داده میشه. استایل کامل صفحه (بک‌گراند تیره + وسط‌چین) رو خودمون
+  // اینجا می‌دیم چون این مسیر از LandingPage استفاده نمی‌کنه و صفحه‌ی جدا خودشه.
   {
     path: "/",
-    element: <div style={{ direction: "rtl", textAlign: "center", padding: 40 }}>
-      لینک دعوت‌نامه شما معتبر نیست.
-    </div>,
+    element: (
+      <div
+        style={{
+          minHeight: "100vh",
+          width: "100%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: "#02205f",
+          direction: "rtl",
+          textAlign: "center",
+          padding: 40,
+          color: "#ffffff",
+          fontSize: "1.125rem",
+          boxSizing: "border-box",
+        }}
+      >
+        لینک دعوت‌نامه شما معتبر نیست.
+      </div>
+    ),
   },
 ]);
 

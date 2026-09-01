@@ -89,8 +89,19 @@ const attendanceOptions: { id: "accept" | "decline"; label: string; className: s
 ];
 
 // کاور ثابتی که رو همه ویدیوها تا قبل از پخش/در حالت لودینگ نشون داده میشه
-// این فایل باید توی public/videos/section2.mp4 خود فرانت باشه (استاتیک، نه از بک‌اند).
-const COVER_VIDEO_SRC = "/videos/section2.mp4";
+// این فایل باید توی public/img/section2-cover.png خود فرانت باشه (استاتیک، نه از بک‌اند).
+const COVER_IMAGE_SRC = "/img/section2-cover.png";
+
+// راه‌حل موقت: بک‌اند فعلاً هیچ فیلدی نداره که بگه یک مهمون ویدیوی اختصاصی
+// داره یا نه (نه has_video، نه video_url قابل‌اعتماد). پس وقتی ویدیوی
+// اختصاصیِ ساخته‌شده از name_en با خطا مواجه بشه (404 و غیره)، به این ویدیوی
+// پیش‌فرض عمومی فال‌بک می‌کنیم. باید از بک‌اند خواسته بشه فیلدی مثل
+// has_video اضافه کنه تا این حدس‌زدن/تلاش‌وخطا لازم نباشه.
+const DEFAULT_GUEST_VIDEO_SRC = "/videos/nameLastname.mp4";
+
+// طبق بک‌اند: وقتی attending=true باشه، phone الزامیه.
+// فرمت شماره موبایل ایران: 09xxxxxxxxx
+const IRAN_MOBILE_REGEX = /^09\d{9}$/;
 
 export const LandingPage = (): JSX.Element => {
   const { slug } = useParams<{ slug: string }>();
@@ -100,11 +111,27 @@ export const LandingPage = (): JSX.Element => {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
+  // attendance و savedPhone = چیزی که واقعاً روی سرور ثبت شده (منبع حقیقت).
+  // این دو، مستقل از "آیا فرم شماره تلفن الان بازه یا نه" هستن.
   const [attendance, setAttendance] = useState<"accept" | "decline" | null>(null);
+  const [savedPhone, setSavedPhone] = useState<string | null>(null);
+
   const [rsvpSubmitting, setRsvpSubmitting] = useState(false);
   const [rsvpError, setRsvpError] = useState<string | null>(null);
 
+  // showPhoneInput فقط با اکشن صریح کاربر true می‌شه؛
+  // هیچ‌جای دیگه‌ای از کد به صورت خودکار بازش نمی‌کنه.
+  const [showPhoneInput, setShowPhoneInput] = useState(false);
+  const [phone, setPhone] = useState("");
+  const [phoneError, setPhoneError] = useState<string | null>(null);
+
   const [videoReady, setVideoReady] = useState(false);
+  // آیا کاربر روی دکمه Play زده؛ تا این true نشه، کاور روی ویدیو می‌مونه
+  // حتی اگه ویدیو از نظر فنی آماده پخش باشه (videoReady=true).
+  const [videoPlaying, setVideoPlaying] = useState(false);
+  // آیا ویدیوی اختصاصیِ ساخته‌شده از name_en با خطا مواجه شد (404 و غیره)؛
+  // در این حالت به ویدیوی پیش‌فرض بی‌صدا (section2.mp4) سوییچ می‌کنیم.
+  const [guestVideoFailed, setGuestVideoFailed] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   // ---- گرفتن اطلاعات دعوت‌نامه بر اساس اسلاگ توی url ----
@@ -121,18 +148,34 @@ export const LandingPage = (): JSX.Element => {
     // هر بار که اسلاگ عوض میشه، وضعیت ویدیوی قبلی رو ریست کن
     // وگرنه کاور دیگه هیچوقت دوباره نشون داده نمیشه
     setVideoReady(false);
+    setVideoPlaying(false);
+    setGuestVideoFailed(false);
 
     getInvite(slug)
       .then((data) => {
         if (cancelled) return;
         setInvite(data);
         // اگر قبلاً پاسخ داده بوده، وضعیتش رو منعکس کن
-        if (data.attending === true) setAttendance("accept");
-        else if (data.attending === false) setAttendance("decline");
+        if (data.attending === true) {
+          setAttendance("accept");
+          setSavedPhone(data.phone ?? null);
+        } else if (data.attending === false) {
+          setAttendance("decline");
+          setSavedPhone(null);
+        } else {
+          setAttendance(null);
+          setSavedPhone(null);
+        }
       })
       .catch(() => {
         if (cancelled) return;
-        setLoadError("دعوت‌نامه‌ای با این آدرس پیدا نشد.");
+        // مهمون با این اسلاگ توی دیتابیس پیدا نشد. صفحه بازم کامل با نام
+        // عمومی "مهمان عزیز" و ویدیوی پیش‌فرض نشون داده میشه؛ دکمه‌های RSVP
+        // هم فعال می‌مونن — اگه کاربر کلیک کنه و سرور رد کنه، همون خطای
+        // معمولی RSVP (rsvpError) پایین دکمه‌ها نشون داده میشه.
+        setInvite(null);
+        setAttendance(null);
+        setSavedPhone(null);
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -143,30 +186,121 @@ export const LandingPage = (): JSX.Element => {
     };
   }, [slug]);
 
-  const handleAttendance = async (choice: "accept" | "decline") => {
-    if (!slug || rsvpSubmitting) return;
+  // کلیک روی "بله ، حتما میام"
+  const handleAcceptClick = () => {
+    if (rsvpSubmitting) return;
+
+    // اگر از قبل با موفقیت "بله" + شماره روی سرور ثبت شده، کلیک دوباره
+    // نباید فرم رو باز کنه. تغییر شماره فقط با دکمه "ویرایش شماره" ممکنه.
+    if (attendance === "accept" && savedPhone) {
+      return;
+    }
+
+    setPhoneError(null);
     setRsvpError(null);
+    setPhone(savedPhone ?? "");
+    setShowPhoneInput(true);
+  };
+
+  // دکمه جدا برای ویرایش شماره‌ی از قبل ثبت‌شده
+  const handleEditPhoneClick = () => {
+    if (rsvpSubmitting) return;
+    setPhoneError(null);
+    setRsvpError(null);
+    setPhone(savedPhone ?? "");
+    setShowPhoneInput(true);
+  };
+
+  // کلیک روی "نه ، برنامه دیگه ای دارم"
+  const handleDeclineClick = async () => {
+    if (!slug || rsvpSubmitting) return;
+
+    // اگر از قبل decline ثبت شده، دوباره درخواست نفرست
+    if (attendance === "decline") return;
+
+    setRsvpError(null);
+    setPhoneError(null);
+    setShowPhoneInput(false);
     setRsvpSubmitting(true);
-    const previous = attendance;
-    setAttendance(choice); // بهینه‌گرایانه آپدیت کن
+
+    const previousAttendance = attendance;
+    const previousPhone = savedPhone;
+
+    setAttendance("decline");
+    setSavedPhone(null);
 
     try {
-      const updated = await submitRsvp(slug, { attending: choice === "accept" });
+      const updated = await submitRsvp(slug, { attending: false });
       setInvite(updated);
     } catch {
-      setAttendance(previous);
+      setAttendance(previousAttendance);
+      setSavedPhone(previousPhone);
       setRsvpError("ثبت پاسخ با مشکل مواجه شد، لطفاً دوباره تلاش کنید.");
     } finally {
       setRsvpSubmitting(false);
     }
   };
 
+  // تایید شماره تلفن داخل فرم و ارسال نهایی "بله میام"
+  const handlePhoneSubmit = async () => {
+    if (!slug || rsvpSubmitting) return;
+
+    const trimmed = phone.trim();
+    if (!IRAN_MOBILE_REGEX.test(trimmed)) {
+      setPhoneError("لطفاً شماره موبایل معتبر وارد کنید (مثلاً 09123456789).");
+      return;
+    }
+
+    setPhoneError(null);
+    setRsvpError(null);
+    setRsvpSubmitting(true);
+
+    const previousAttendance = attendance;
+    const previousPhone = savedPhone;
+
+    try {
+      const updated = await submitRsvp(slug, { attending: true, phone: trimmed });
+      setInvite(updated);
+      setAttendance("accept");
+      setSavedPhone(trimmed);
+      // فقط بعد از موفقیت واقعی سرور فرم بسته میشه
+      setShowPhoneInput(false);
+    } catch {
+      setAttendance(previousAttendance);
+      setSavedPhone(previousPhone);
+      setRsvpError("ثبت پاسخ با مشکل مواجه شد، لطفاً دوباره تلاش کنید.");
+      // فرم رو باز نگه می‌داریم تا کاربر بدون تایپ دوباره، فقط دکمه رو بزنه
+    } finally {
+      setRsvpSubmitting(false);
+    }
+  };
+
+  const handleCancelPhoneInput = () => {
+    setShowPhoneInput(false);
+    setPhoneError(null);
+    setPhone(savedPhone ?? "");
+  };
+
   const displayName = invite?.name ?? "مهمان عزیز";
 
   // فیلد video_url که از API میاد قابل اعتماد نیست؛ آدرس واقعی ویدیو بر اساس
   // name_en مهمون ساخته میشه: http://mazeverest.ir/videos/{name_en}.mp4
-  // اگه ویدیوی اختصاصی پیدا/لود نشد (404 و غیره)، onError کاور رو نشون میده.
-  const activeVideoSrc = buildVideoUrl(invite?.name_en) || COVER_VIDEO_SRC;
+  const guestVideoUrl = buildVideoUrl(invite?.name_en);
+  // اگه ویدیوی اختصاصی نداریم (name_en خالیه) یا لود/پخشش با خطا مواجه شد،
+  // به ویدیوی پیش‌فرض بی‌صدا فال‌بک می‌کنیم؛ در غیر این صورت همون ویدیوی اختصاصیه.
+  const activeVideoSrc =
+    guestVideoUrl && !guestVideoFailed ? guestVideoUrl : DEFAULT_GUEST_VIDEO_SRC;
+
+  // اگه اسلاگ نامعتبره یا مهمون توی بک‌اند پیدا نشد (404)، کل صفحه‌ی اصلی
+  // (که پر از "مهمان عزیز" و بقیه محتواست) اصلاً رندر نمیشه — فقط همین پیام خطا
+  // به تنهایی نشون داده میشه، تا با محتوای واقعی صفحه قاطی نشه.
+  if (!loading && loadError) {
+    return (
+      <main className="flex min-h-screen w-full items-center justify-center bg-[#02205f] px-6">
+        <p className="max-w-md text-center text-lg text-white [direction:rtl]">{loadError}</p>
+      </main>
+    );
+  }
 
   return (
     <main
@@ -204,7 +338,7 @@ export const LandingPage = (): JSX.Element => {
           </p>
         </section>
 
-        {/* ---- ویدیوی داینامیک روی کاور section2.mp4 ---- */}
+        {/* ---- ویدیوی داینامیک روی کاور عکس section2-cover.png با دکمه Play؛ فال‌بک به ویدیوی پیش‌فرض اگه ویدیوی اختصاصی نبود/fail شد ---- */}
         <div className="absolute left-[calc(50%_-_132px)] top-[1870px] h-[369px] w-[264px] overflow-hidden rounded-[26px] bg-black">
           <video
             ref={videoRef}
@@ -212,21 +346,51 @@ export const LandingPage = (): JSX.Element => {
             className="h-full w-full object-cover"
             src={activeVideoSrc}
             poster={undefined}
-            controls
+            controls={videoPlaying}
             playsInline
             preload="metadata"
             onCanPlay={() => setVideoReady(true)}
-            onError={() => setVideoReady(false)}
+            onError={() => {
+              setVideoReady(false);
+              // فقط وقتی هنوز روی ویدیوی اختصاصی هستیم سوییچ کن به پیش‌فرض،
+              // وگرنه اگه ویدیوی پیش‌فرض هم خطا بده وارد حلقه بی‌نهایت میشیم.
+              if (guestVideoUrl && !guestVideoFailed) {
+                setGuestVideoFailed(true);
+              }
+            }}
+            onPause={() => setVideoPlaying(false)}
+            onEnded={() => setVideoPlaying(false)}
           />
-          {!videoReady && (
-            <video
-              className="pointer-events-none absolute inset-0 h-full w-full object-cover"
-              src={COVER_VIDEO_SRC}
-              autoPlay
-              muted
-              loop
-              playsInline
-            />
+          {!videoPlaying && (
+            <button
+              type="button"
+              onClick={() => {
+                if (!activeVideoSrc || !videoReady) return;
+                setVideoPlaying(true);
+                videoRef.current?.play().catch(() => {
+                  // اگه پخش به هر دلیلی (مثلاً autoplay policy) ناموفق بود، به حالت کاور برگرد
+                  setVideoPlaying(false);
+                });
+              }}
+              disabled={!activeVideoSrc || !videoReady}
+              aria-label="پخش ویدیو"
+              className="absolute inset-0 flex items-center justify-center disabled:cursor-default"
+            >
+              <img
+                className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+                src={COVER_IMAGE_SRC}
+                alt=""
+              />
+              {activeVideoSrc && videoReady && (
+                <span className="relative z-10 flex h-16 w-16 items-center justify-center rounded-full bg-white/90 shadow-lg transition-transform hover:scale-105">
+                  {/* آیکن پلی ساده با CSS (مثلث)، بدون نیاز به فایل svg اضافه */}
+                  <span
+                    className="ml-1 h-0 w-0 border-y-[12px] border-l-[20px] border-y-transparent border-l-[#02205f]"
+                    aria-hidden="true"
+                  />
+                </span>
+              )}
+            </button>
           )}
         </div>
         {!loading && (
@@ -307,20 +471,73 @@ export const LandingPage = (): JSX.Element => {
           role="group"
           aria-label="پاسخ حضور در مراسم"
         >
-          {attendanceOptions.map((option) => (
-            <Button
-              key={option.id}
-              type="button"
-              variant="ghost"
-              disabled={rsvpSubmitting || loading}
-              aria-pressed={attendance === option.id}
-              onClick={() => handleAttendance(option.id)}
-              className={option.className}
-            >
-              {option.label}
-            </Button>
-          ))}
+          <Button
+            type="button"
+            variant="ghost"
+            disabled={rsvpSubmitting || loading}
+            aria-pressed={attendance === "decline"}
+            onClick={handleDeclineClick}
+            className={attendanceOptions[0].className}
+          >
+            {attendanceOptions[0].label}
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            disabled={rsvpSubmitting || loading}
+            aria-pressed={attendance === "accept"}
+            onClick={handleAcceptClick}
+            className={attendanceOptions[1].className}
+          >
+            {attendanceOptions[1].label}
+          </Button>
         </div>
+
+        {/*
+          فرم شماره تلفن: دقیقاً همون جایی که قبلاً پیام "عالی همدیگه رو
+          می‌بینیم" نمایش داده می‌شد (top-3166) قرار می‌گیره، چون این دو هیچ‌وقت
+          هم‌زمان نمایش داده نمی‌شن (یا فرم بازه، یا پیام تایید نشون داده میشه).
+        */}
+        {showPhoneInput && (
+          <div className="absolute left-[calc(50%_-_150px)] top-[3160px] w-[300px] text-center [direction:rtl]">
+            <input
+              type="tel"
+              inputMode="numeric"
+              placeholder="شماره موبایل شما"
+              value={phone}
+              onChange={(e) => {
+                setPhone(e.target.value);
+                if (phoneError) setPhoneError(null);
+              }}
+              disabled={rsvpSubmitting}
+              className="w-full rounded-[10px] border border-white/30 bg-white/10 px-3 py-2 text-center text-white placeholder-white/60 outline-none"
+              dir="ltr"
+              autoFocus
+            />
+            {phoneError && (
+              <p className="mt-1 text-sm text-red-300">{phoneError}</p>
+            )}
+            <div className="mt-2 flex gap-2">
+              <Button
+                type="button"
+                className="h-[34px] flex-1 rounded-[10.32px] bg-[#89cf84] p-0 font-semibold text-base text-[#555555] hover:bg-[#89cf84]/90"
+                disabled={rsvpSubmitting}
+                onClick={handlePhoneSubmit}
+              >
+                {rsvpSubmitting ? "در حال ثبت…" : "ثبت و تایید"}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                className="h-[34px] flex-1 rounded-[10.32px] bg-white/10 p-0 font-medium text-base text-white"
+                disabled={rsvpSubmitting}
+                onClick={handleCancelPhoneInput}
+              >
+                انصراف
+              </Button>
+            </div>
+          </div>
+        )}
 
         {rsvpError && (
           <p className="absolute left-[calc(50%_-_150px)] top-[3140px] w-[300px] text-center text-sm text-red-300 [direction:rtl]">
@@ -328,7 +545,13 @@ export const LandingPage = (): JSX.Element => {
           </p>
         )}
 
-        {attendance === "accept" && (
+        {/*
+          پیام تایید نهایی فقط وقتی نشون داده میشه که:
+          - جواب ثبت‌شده روی سرور "accept" باشه
+          - شماره تلفن واقعاً ذخیره شده باشه
+          - فرم شماره الان بسته باشه (تا با فرم هم‌پوشانی نداشته باشه)
+        */}
+        {attendance === "accept" && savedPhone && !showPhoneInput && (
           <>
             <p className="absolute left-[calc(50%_-_125px)] top-[3166px] w-[249px] text-center text-xl font-medium leading-[normal] text-white [direction:rtl]">
               عالی؛ پس همدیگه رو می‌بینیم
@@ -338,13 +561,14 @@ export const LandingPage = (): JSX.Element => {
               alt="Line md confirm"
               src="https://c.animaapp.com/yMsQIt4gcRaRivWzIussoA/img/line-md-confirm-circle-filled.svg"
             />
+            <button
+              type="button"
+              onClick={handleEditPhoneClick}
+              className="absolute left-[calc(50%_-_60px)] top-[3255px] ml-6 text-sm text-white/70 underline"
+            >
+              ویرایش شماره
+            </button>
           </>
-        )}
-
-        {loadError && (
-          <p className="absolute left-[calc(50%_-_200px)] top-[400px] w-[400px] text-center text-lg text-red-300 [direction:rtl]">
-            {loadError}
-          </p>
         )}
 
         {illustrationAssets.slice(3).map((asset) => (
