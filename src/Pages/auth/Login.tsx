@@ -1,5 +1,6 @@
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
+import { useNavigate } from "react-router-dom";
 import AnimatedMaze from "../../components/maze/AnimatedMaze";
 import { AnimatePresence, motion } from "motion/react";
 import {
@@ -11,6 +12,7 @@ import {
   Check,
 } from "lucide-react";
 import { useState } from "react";
+import { login, setToken, ApiError } from "../../lib/api";
 
 interface LoginValues {
   username: string;
@@ -38,17 +40,27 @@ const validationSchema = Yup.object({
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [mazeDone, setMazeDone] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   const handleSubmit = async (values: LoginValues) => {
-    console.log("LOGIN:", values);
-
-    /*
-      اینجا API خودت رو قرار بده:
-      const response = await axios.post("/api/login", values);
-      console.log(response.data);
-    */
-
-    await new Promise((resolve) => setTimeout(resolve, 800));
+    setLoginError(null);
+    try {
+      const res = await login({
+        username: values.username.trim(),
+        password: values.password,
+      });
+      setToken(res.access_token);
+      navigate("/admin");
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 422) {
+        setLoginError("نام کاربری یا رمز عبور نامعتبر است.");
+      } else if (err instanceof ApiError) {
+        setLoginError("نام کاربری یا رمز عبور اشتباه است.");
+      } else {
+        setLoginError("خطا در ارتباط با سرور. دوباره تلاش کنید.");
+      }
+    }
   };
 
   return (
@@ -64,34 +76,9 @@ export default function Login() {
       "
     >
 
-{/* <AnimatedMaze /> */}
 <AnimatedMaze
   onComplete={() => setMazeDone(true)}
 />
-
-        {/* <div
-          className="
-            absolute
-            inset-0
-            z-0
-            h-full
-            w-full
-          "
-        >
-          <img
-            src="/maz-traced.svg"
-            alt=""
-            aria-hidden="true"
-            className="
-              h-full
-              w-full
-              object-cover
-              object-center
-            "
-          />
-        </div> */}
-
-
 
 <AnimatePresence>
         {mazeDone && (
@@ -128,7 +115,6 @@ export default function Login() {
               justify-center
             "
           >
-            {/* LOGIN BOX شروع  */}
             <div
         className="
           absolute
@@ -179,12 +165,10 @@ export default function Login() {
         "
       />
 
-
       <div
         className="
           relative
           flex
-          min-h-screen
           min-h-screen
           w-full
           items-center
@@ -242,7 +226,6 @@ export default function Login() {
               to-transparent
             "
           />
-
 
           <div
             className="
@@ -548,8 +531,6 @@ export default function Login() {
 
                   </label>
 
-                  {/* Forgot */}
-
                   <button
                     type="button"
                     className="
@@ -567,6 +548,13 @@ export default function Login() {
                   </button>
 
                 </div>
+
+                {loginError && (
+                  <p className="text-center text-[12px] text-red-300">
+                    {loginError}
+                  </p>
+                )}
+
                 <button
                   type="submit"
                   disabled={isSubmitting}
