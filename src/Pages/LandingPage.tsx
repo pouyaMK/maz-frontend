@@ -211,7 +211,7 @@ export const LandingPage = (): JSX.Element => {
             key={activeVideoSrc}
             className="h-full w-full object-cover"
             src={activeVideoSrc}
-            poster={undefined}
+            poster="/img/section2-cover.png"
             controls
             playsInline
             preload="metadata"
