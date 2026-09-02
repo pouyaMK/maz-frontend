@@ -1,9 +1,18 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
+import { lazy } from "react";
 
-import LandingPage from "../Pages/LandingPage";
-import AuthLayout from "../layouts/AuthLayout";
-import Login from "../Pages/auth/Login";
-import Dashboard from "../Pages/admin/Dashboard";
+// const Login = lazy(() => import("../Pages/auth/Login"));
+// const LandingPage = lazy(() => import("../Pages/auth/LandingPage"));
+// const Admin = lazy(() => import("../Pages/admin/Admin"));
+
+// import LandingPage from "../Pages/LandingPage";
+const LandingPage = lazy(() => import("../Pages/LandingPage"))
+const AuthLayout = lazy(() => import("../layouts/AuthLayout"))
+// import AuthLayout from "../layouts/AuthLayout";
+// import Login from "../Pages/auth/Login";
+const Login = lazy(() => import("../Pages/auth/Login"))
+const Dashboard = lazy(() => import("../Pages/admin/Dashboard"))
+// import Dashboard from "../Pages/admin/Dashboard";
 import { getToken } from "../lib/api";
 
 // یه گارد خیلی ساده: اگه توکن نبود میفرسته لاگین

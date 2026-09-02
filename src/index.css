@@ -47,58 +47,6 @@ input:-webkit-autofill:active {
   -webkit-text-fill-color: #000 !important;
 }
 
-/* 
-@font-face {
-  font-family: YekanBakh;
-    src: url(assets/fonts/YekanBakh/YekanBakh-Thin.woff2) format('woff2');
-  font-weight: 300;
-  font-style: normal;
-  font-display: fallback;
-}
-
-@font-face {
-  font-family: YekanBakh;
-  src: url(assets/fonts/YekanBakh/YekanBakh-Regular.woff2) format('woff2');
-  font-weight: 400;
-  font-style: normal;
-  font-display: fallback;
-}
-
-@font-face {
-  font-family: YekanBakh;
-  src: url(assets/fonts/YekanBakh/YekanBakh-Bold.woff2) format('woff2');
-  font-weight: 700;
-  font-style: normal;
-  font-display: fallback;
-}
-
-@font-face {
-  font-family: YekanBakh;
-  src: url(assets/fonts/YekanBakh/YekanBakh-Black.woff2) format('woff2');
-  font-weight: 900; 
-  font-style: normal;
-  font-display: fallback;
-}
-
-@font-face {
-  font-family: YekanBakh;
-  src: url(assets/fonts/YekanBakh/YekanBakh-Thin.woff2) format('woff2');
-  font-weight: 300; 
-  font-style: normal;
-  font-display: fallback;
-}
-
-@font-face {
-  font-family: YekanBakh;
-  src: url(assets/fonts/YekanBakh/YekanBakh-Thin.woff2) format('woff2');
-  font-weight: 300; 
-  font-style: normal;
-  font-display: fallback;
-}
- */
-
-
-
 
 
 @font-face {

@@ -1,4 +1,4 @@
-import { motion } from "motion/react";
+import { motion } from "framer-motion";
 import { bluePaths, greenPaths } from "./mazePaths";
 import type { MazePath } from "./mazeTypes";
 
