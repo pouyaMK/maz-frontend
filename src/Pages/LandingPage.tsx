@@ -1,8 +1,14 @@
 import { useEffect, useRef, useState, type JSX } from "react";
 import { useParams } from "react-router-dom";
+import { motion, type Variants } from "framer-motion";
 import { Button } from "../components/button";
 import { useCanvasScale } from "../hooks/useCanvasScale";
 import { getInvite, submitRsvp, buildVideoUrl, type InvitePublic } from "../lib/api";
+import { MazeGroupIllustration } from "../components/illustrations/MazeGroupIllustration";
+import MazeLeafIllustration from "../components/illustrations/MazeLeafIllustration";
+import MazeCornerVector from "../components/illustrations/MazeCornerVector";
+import MazeBadgeIllustration from "../components/illustrations/MazeBadgeIllustration";
+import MazeFooterIllustration from "../components/illustrations/MazeFooterIllustration";
 
 const DESIGN_WIDTH = 1920;
 const DESIGN_HEIGHT = 3841;
@@ -12,11 +18,6 @@ const decorativeAssets = [
     alt: "Vector",
     className: "absolute left-0 top-0 h-[113.93%] w-[100.63%]",
     src: "https://c.animaapp.com/yMsQIt4gcRaRivWzIussoA/img/vector.svg",
-  },
-  {
-    alt: "Vector",
-    className: "absolute left-[30.44%] top-[57.18%] h-[9.62%] w-[11.03%]",
-    src: "https://c.animaapp.com/yMsQIt4gcRaRivWzIussoA/img/vector-2-1.svg",
   },
   {
     alt: "Vector",
@@ -35,41 +36,29 @@ const decorativeAssets = [
   },
 ];
 
-const illustrationAssets = [
-  {
-    alt: "Layer",
-    className: "absolute left-[1194px] top-[2624px] h-[184px] w-[303px]",
-    src: "https://c.animaapp.com/yMsQIt4gcRaRivWzIussoA/img/layer-1-1.svg",
-  },
-  {
-    alt: "Group",
-    className: "absolute left-[557px] top-[638px] h-[812px] w-[836px]",
-    src: "https://c.animaapp.com/yMsQIt4gcRaRivWzIussoA/img/group-11.png",
-  },
+
+const illustrationAssetsTop = [
   {
     alt: "Group",
     className: "absolute left-[1499px] top-[76px] h-[99px] w-[179px]",
     src: "https://c.animaapp.com/yMsQIt4gcRaRivWzIussoA/img/group-1.png",
+    float: true,
   },
   {
     alt: "Layer",
     className: "absolute left-[801px] top-[345px] h-[149px] w-[381px]",
     src: "https://c.animaapp.com/yMsQIt4gcRaRivWzIussoA/img/layer-1-2.svg",
+    float: true,
   },
-  {
-    alt: "Layer",
-    className: "absolute left-0 top-[3301px] h-[386px] w-[818px]",
-    src: "https://c.animaapp.com/yMsQIt4gcRaRivWzIussoA/img/layer-1.svg",
-  },
-  {
-    alt: "Layer",
-    className: "absolute left-[880px] top-[1512px] h-[629px] w-[613px]",
-    src: "https://c.animaapp.com/yMsQIt4gcRaRivWzIussoA/img/layer-1-3.svg",
-  },
+];
+
+const illustrationAssetsBottom = [
+
   {
     alt: "Group",
     className: "absolute left-[562px] top-[2631px] h-[266px] w-[51px]",
     src: "https://c.animaapp.com/yMsQIt4gcRaRivWzIussoA/img/group-10.png",
+    float: false,
   },
 ];
 
@@ -88,20 +77,103 @@ const attendanceOptions: { id: "accept" | "decline"; label: string; className: s
   },
 ];
 
-// کاور ثابتی که رو همه ویدیوها تا قبل از پخش/در حالت لودینگ نشون داده میشه
-// این فایل باید توی public/img/section2-cover.png خود فرانت باشه (استاتیک، نه از بک‌اند).
 const COVER_IMAGE_SRC = "/img/section2-cover.png";
-
-// راه‌حل موقت: بک‌اند فعلاً هیچ فیلدی نداره که بگه یک مهمون ویدیوی اختصاصی
-// داره یا نه (نه has_video، نه video_url قابل‌اعتماد). پس وقتی ویدیوی
-// اختصاصیِ ساخته‌شده از name_en با خطا مواجه بشه (404 و غیره)، به این ویدیوی
-// پیش‌فرض عمومی فال‌بک می‌کنیم. باید از بک‌اند خواسته بشه فیلدی مثل
-// has_video اضافه کنه تا این حدس‌زدن/تلاش‌وخطا لازم نباشه.
 const DEFAULT_GUEST_VIDEO_SRC = "/videos/nameLastname.mp4";
-
-// طبق بک‌اند: وقتی attending=true باشه، phone الزامیه.
-// فرمت شماره موبایل ایران: 09xxxxxxxxx
 const IRAN_MOBILE_REGEX = /^09\d{9}$/;
+
+// ---------------------------------------------------------------------------
+// Framer Motion variants
+// ---------------------------------------------------------------------------
+
+const decorativeContainerVariants: Variants = {
+  hidden: {},
+  visible: {
+    transition: {
+      staggerChildren: 0.12,
+      delayChildren: 0.1,
+    },
+  },
+};
+
+const decorativeItemVariants: Variants = {
+  hidden: { opacity: 0, scale: 0.92, y: 24 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    y: 0,
+    transition: { duration: 0.9, ease: [0.16, 1, 0.3, 1] },
+  },
+};
+
+const illustrationContainerVariants: Variants = {
+  hidden: {},
+  visible: {
+    transition: {
+      staggerChildren: 0.15,
+      delayChildren: 0.3,
+    },
+  },
+};
+
+const illustrationItemVariants: Variants = {
+  hidden: { opacity: 0, scale: 0.9, y: 32 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    y: 0,
+    transition: { duration: 1, ease: [0.16, 1, 0.3, 1] },
+  },
+};
+
+const floatTransition = (delay: number) => ({
+  y: {
+    duration: 4.5,
+    repeat: Infinity,
+    repeatType: "mirror" as const,
+    ease: "easeInOut" as const,
+    delay,
+  },
+});
+
+const fadeUpVariants: Variants = {
+  hidden: { opacity: 0, y: 28 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.7, ease: [0.16, 1, 0.3, 1] },
+  },
+};
+
+const fadeInVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { duration: 0.6, ease: "easeOut" } },
+};
+
+const scaleInVariants: Variants = {
+  hidden: { opacity: 0, scale: 0.9 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    transition: { duration: 0.7, ease: [0.16, 1, 0.3, 1] },
+  },
+};
+
+const buttonsContainerVariants: Variants = {
+  hidden: {},
+  visible: {
+    transition: { staggerChildren: 0.12, delayChildren: 0.1 },
+  },
+};
+
+const buttonItemVariants: Variants = {
+  hidden: { opacity: 0, scale: 0.85, y: 16 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    y: 0,
+    transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] },
+  },
+};
 
 export const LandingPage = (): JSX.Element => {
   const { slug } = useParams<{ slug: string }>();
@@ -111,30 +183,21 @@ export const LandingPage = (): JSX.Element => {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  // attendance و savedPhone = چیزی که واقعاً روی سرور ثبت شده (منبع حقیقت).
-  // این دو، مستقل از "آیا فرم شماره تلفن الان بازه یا نه" هستن.
   const [attendance, setAttendance] = useState<"accept" | "decline" | null>(null);
   const [savedPhone, setSavedPhone] = useState<string | null>(null);
 
   const [rsvpSubmitting, setRsvpSubmitting] = useState(false);
   const [rsvpError, setRsvpError] = useState<string | null>(null);
 
-  // showPhoneInput فقط با اکشن صریح کاربر true می‌شه؛
-  // هیچ‌جای دیگه‌ای از کد به صورت خودکار بازش نمی‌کنه.
   const [showPhoneInput, setShowPhoneInput] = useState(false);
   const [phone, setPhone] = useState("");
   const [phoneError, setPhoneError] = useState<string | null>(null);
 
   const [videoReady, setVideoReady] = useState(false);
-  // آیا کاربر روی دکمه Play زده؛ تا این true نشه، کاور روی ویدیو می‌مونه
-  // حتی اگه ویدیو از نظر فنی آماده پخش باشه (videoReady=true).
   const [videoPlaying, setVideoPlaying] = useState(false);
-  // آیا ویدیوی اختصاصیِ ساخته‌شده از name_en با خطا مواجه شد (404 و غیره)؛
-  // در این حالت به ویدیوی پیش‌فرض بی‌صدا (section2.mp4) سوییچ می‌کنیم.
   const [guestVideoFailed, setGuestVideoFailed] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  // ---- گرفتن اطلاعات دعوت‌نامه بر اساس اسلاگ توی url ----
   useEffect(() => {
     if (!slug) {
       setLoadError("لینک دعوت‌نامه نامعتبر است.");
@@ -145,8 +208,6 @@ export const LandingPage = (): JSX.Element => {
     let cancelled = false;
     setLoading(true);
     setLoadError(null);
-    // هر بار که اسلاگ عوض میشه، وضعیت ویدیوی قبلی رو ریست کن
-    // وگرنه کاور دیگه هیچوقت دوباره نشون داده نمیشه
     setVideoReady(false);
     setVideoPlaying(false);
     setGuestVideoFailed(false);
@@ -155,7 +216,6 @@ export const LandingPage = (): JSX.Element => {
       .then((data) => {
         if (cancelled) return;
         setInvite(data);
-        // اگر قبلاً پاسخ داده بوده، وضعیتش رو منعکس کن
         if (data.attending === true) {
           setAttendance("accept");
           setSavedPhone(data.phone ?? null);
@@ -169,10 +229,6 @@ export const LandingPage = (): JSX.Element => {
       })
       .catch(() => {
         if (cancelled) return;
-        // مهمون با این اسلاگ توی دیتابیس پیدا نشد. صفحه بازم کامل با نام
-        // عمومی "مهمان عزیز" و ویدیوی پیش‌فرض نشون داده میشه؛ دکمه‌های RSVP
-        // هم فعال می‌مونن — اگه کاربر کلیک کنه و سرور رد کنه، همون خطای
-        // معمولی RSVP (rsvpError) پایین دکمه‌ها نشون داده میشه.
         setInvite(null);
         setAttendance(null);
         setSavedPhone(null);
@@ -186,23 +242,17 @@ export const LandingPage = (): JSX.Element => {
     };
   }, [slug]);
 
-  // کلیک روی "بله ، حتما میام"
   const handleAcceptClick = () => {
     if (rsvpSubmitting) return;
-
-    // اگر از قبل با موفقیت "بله" + شماره روی سرور ثبت شده، کلیک دوباره
-    // نباید فرم رو باز کنه. تغییر شماره فقط با دکمه "ویرایش شماره" ممکنه.
     if (attendance === "accept" && savedPhone) {
       return;
     }
-
     setPhoneError(null);
     setRsvpError(null);
     setPhone(savedPhone ?? "");
     setShowPhoneInput(true);
   };
 
-  // دکمه جدا برای ویرایش شماره‌ی از قبل ثبت‌شده
   const handleEditPhoneClick = () => {
     if (rsvpSubmitting) return;
     setPhoneError(null);
@@ -211,11 +261,8 @@ export const LandingPage = (): JSX.Element => {
     setShowPhoneInput(true);
   };
 
-  // کلیک روی "نه ، برنامه دیگه ای دارم"
   const handleDeclineClick = async () => {
     if (!slug || rsvpSubmitting) return;
-
-    // اگر از قبل decline ثبت شده، دوباره درخواست نفرست
     if (attendance === "decline") return;
 
     setRsvpError(null);
@@ -241,7 +288,6 @@ export const LandingPage = (): JSX.Element => {
     }
   };
 
-  // تایید شماره تلفن داخل فرم و ارسال نهایی "بله میام"
   const handlePhoneSubmit = async () => {
     if (!slug || rsvpSubmitting) return;
 
@@ -263,13 +309,11 @@ export const LandingPage = (): JSX.Element => {
       setInvite(updated);
       setAttendance("accept");
       setSavedPhone(trimmed);
-      // فقط بعد از موفقیت واقعی سرور فرم بسته میشه
       setShowPhoneInput(false);
     } catch {
       setAttendance(previousAttendance);
       setSavedPhone(previousPhone);
       setRsvpError("ثبت پاسخ با مشکل مواجه شد، لطفاً دوباره تلاش کنید.");
-      // فرم رو باز نگه می‌داریم تا کاربر بدون تایپ دوباره، فقط دکمه رو بزنه
     } finally {
       setRsvpSubmitting(false);
     }
@@ -282,22 +326,21 @@ export const LandingPage = (): JSX.Element => {
   };
 
   const displayName = invite?.name ?? "مهمان عزیز";
-
-  // فیلد video_url که از API میاد قابل اعتماد نیست؛ آدرس واقعی ویدیو بر اساس
-  // name_en مهمون ساخته میشه: http://mazeverest.ir/videos/{name_en}.mp4
   const guestVideoUrl = buildVideoUrl(invite?.name_en);
-  // اگه ویدیوی اختصاصی نداریم (name_en خالیه) یا لود/پخشش با خطا مواجه شد،
-  // به ویدیوی پیش‌فرض بی‌صدا فال‌بک می‌کنیم؛ در غیر این صورت همون ویدیوی اختصاصیه.
   const activeVideoSrc =
     guestVideoUrl && !guestVideoFailed ? guestVideoUrl : DEFAULT_GUEST_VIDEO_SRC;
 
-  // اگه اسلاگ نامعتبره یا مهمون توی بک‌اند پیدا نشد (404)، کل صفحه‌ی اصلی
-  // (که پر از "مهمان عزیز" و بقیه محتواست) اصلاً رندر نمیشه — فقط همین پیام خطا
-  // به تنهایی نشون داده میشه، تا با محتوای واقعی صفحه قاطی نشه.
   if (!loading && loadError) {
     return (
       <main className="flex min-h-screen w-full items-center justify-center bg-[#02205f] px-6">
-        <p className="max-w-md text-center text-lg text-white [direction:rtl]">{loadError}</p>
+        <motion.p
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="max-w-md text-center text-lg text-white [direction:rtl]"
+        >
+          {loadError}
+        </motion.p>
       </main>
     );
   }
@@ -312,34 +355,83 @@ export const LandingPage = (): JSX.Element => {
         style={{ transform: `scale(${scale})` }}
         data-model-id="1:2"
       >
-        {decorativeAssets.map((asset) => (
-          <img key={asset.src} className={asset.className} alt={asset.alt} src={asset.src} />
-        ))}
+        {/* --- تزئینات پس‌زمینه: ورود staggered --- */}
+        <motion.div initial="hidden" animate="visible" variants={decorativeContainerVariants}>
+          {decorativeAssets.map((asset) => (
+            <motion.img
+              key={asset.src}
+              variants={decorativeItemVariants}
+              className={asset.className}
+              alt={asset.alt}
+              src={asset.src}
+            />
+          ))}
+        </motion.div>
 
-        {illustrationAssets.slice(0, 3).map((asset) => (
-          <img key={asset.src} className={asset.className} alt={asset.alt} src={asset.src} />
-        ))}
+        {/* --- illustration های بالای صفحه --- */}
+        <motion.div initial="hidden" animate="visible" variants={illustrationContainerVariants}>
+          {illustrationAssetsTop.map((asset, i) => (
+            <motion.img
+              key={asset.src}
+              variants={illustrationItemVariants}
+              animate={
+                asset.float
+                  ? { y: [0, -14, 0], transition: floatTransition(i * 0.4) }
+                  : undefined
+              }
+              className={asset.className}
+              alt={asset.alt}
+              src={asset.src}
+            />
+          ))}
+        </motion.div>
 
-        <section
+        {/* --- illustration بزرگ وسط صفحه: قبلاً group-11.png بود، الان
+             خودِ SVG اینلاین با انیمیشنِ "کشیده‌شدن" هر خط جداگانه --- */}
+        <MazeGroupIllustration className="absolute left-[557px] top-[638px] h-[812px] w-[836px]" />
+        <MazeLeafIllustration className="absolute left-[880px] top-[1512px] h-[629px] w-[613px]" />
+        <MazeCornerVector className="absolute left-[30.44%] top-[57.18%] h-[9.62%] w-[11.03%]" />
+        <MazeFooterIllustration className="absolute left-0 top-[3301px] h-[386px] w-[818px]" />
+
+        <motion.div
+          animate={{ y: [0, -14, 0], transition: floatTransition(0) }}
+        >
+          <MazeBadgeIllustration className="absolute left-[1194px] top-[2624px] h-[184px] w-[303px]" />
+        </motion.div>
+        <motion.section
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.4 }}
+          variants={fadeUpVariants}
           className="absolute left-[calc(50%_-_260px)] top-[1520px] w-[520px] text-center [direction:rtl]"
           aria-labelledby="invitation-title"
         >
-          <h1
+          <motion.h1
             id="invitation-title"
+            variants={fadeUpVariants}
             className="absolute -top-[59px] left-1/2 w-full -translate-x-1/2 whitespace-nowrap text-[26.4px] font-semibold leading-[normal] text-white"
           >
             {loading ? "در حال بارگذاری…" : `${displayName} عزیز 🌱`}
-          </h1>
-          <p className="text-xl font-normal leading-[30px] text-white">
+          </motion.h1>
+          <motion.p
+            variants={fadeUpVariants}
+            className="text-xl font-normal leading-[30px] text-white"
+          >
             خیلی خوشحال می‌شیم شما رو در جشن اورست ماز ببینیم؛ جشنی که به
             مناسبت رسیدن ماز به قله آموزش کشور برگزار میشه. در مسیر این
             موفقیت، تک‌تک همراهان ماز، از جمله شما، سهیم بودید و دوست داریم
             این اتفاق بزرگ رو کنار هم جشن بگیریم.
-          </p>
-        </section>
+          </motion.p>
+        </motion.section>
 
-        {/* ---- ویدیوی داینامیک روی کاور عکس section2-cover.png با دکمه Play؛ فال‌بک به ویدیوی پیش‌فرض اگه ویدیوی اختصاصی نبود/fail شد ---- */}
-        <div className="absolute left-[calc(50%_-_132px)] top-[1870px] h-[369px] w-[264px] overflow-hidden rounded-[26px] bg-black">
+        {/* --- ویدیو با انیمیشن scale-in وقتی وارد صفحه دید میشه --- */}
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.5 }}
+          variants={scaleInVariants}
+          className="absolute left-[calc(50%_-_132px)] top-[1870px] h-[369px] w-[264px] overflow-hidden rounded-[26px] bg-black"
+        >
           <video
             ref={videoRef}
             key={activeVideoSrc}
@@ -352,8 +444,6 @@ export const LandingPage = (): JSX.Element => {
             onCanPlay={() => setVideoReady(true)}
             onError={() => {
               setVideoReady(false);
-              // فقط وقتی هنوز روی ویدیوی اختصاصی هستیم سوییچ کن به پیش‌فرض،
-              // وگرنه اگه ویدیوی پیش‌فرض هم خطا بده وارد حلقه بی‌نهایت میشیم.
               if (guestVideoUrl && !guestVideoFailed) {
                 setGuestVideoFailed(true);
               }
@@ -362,13 +452,14 @@ export const LandingPage = (): JSX.Element => {
             onEnded={() => setVideoPlaying(false)}
           />
           {!videoPlaying && (
-            <button
+            <motion.button
               type="button"
+              whileHover={activeVideoSrc && videoReady ? { scale: 1.03 } : undefined}
+              whileTap={activeVideoSrc && videoReady ? { scale: 0.97 } : undefined}
               onClick={() => {
                 if (!activeVideoSrc || !videoReady) return;
                 setVideoPlaying(true);
                 videoRef.current?.play().catch(() => {
-                  // اگه پخش به هر دلیلی (مثلاً autoplay policy) ناموفق بود، به حالت کاور برگرد
                   setVideoPlaying(false);
                 });
               }}
@@ -382,24 +473,45 @@ export const LandingPage = (): JSX.Element => {
                 alt=""
               />
               {activeVideoSrc && videoReady && (
-                <span className="relative z-10 flex h-16 w-16 items-center justify-center rounded-full bg-white/90 shadow-lg transition-transform hover:scale-105">
-                  {/* آیکن پلی ساده با CSS (مثلث)، بدون نیاز به فایل svg اضافه */}
+                <motion.span
+                  initial={{ opacity: 0, scale: 0.7 }}
+                  animate={{
+                    opacity: 1,
+                    scale: [1, 1.08, 1],
+                    transition: {
+                      opacity: { duration: 0.4 },
+                      scale: { duration: 2, repeat: Infinity, ease: "easeInOut" },
+                    },
+                  }}
+                  className="relative z-10 flex h-16 w-16 items-center justify-center rounded-full bg-white/90 shadow-lg"
+                >
                   <span
                     className="ml-1 h-0 w-0 border-y-[12px] border-l-[20px] border-y-transparent border-l-[#02205f]"
                     aria-hidden="true"
                   />
-                </span>
+                </motion.span>
               )}
-            </button>
+            </motion.button>
           )}
-        </div>
+        </motion.div>
+
         {!loading && (
-          <p className="absolute left-[calc(50%_-_132px)] top-[2249px] w-[264px] text-center text-base font-medium text-white [direction:rtl]">
+          <motion.p
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.8 }}
+            variants={fadeInVariants}
+            className="absolute left-[calc(50%_-_132px)] top-[2249px] w-[264px] text-center text-base font-medium text-white [direction:rtl]"
+          >
             {displayName}
-          </p>
+          </motion.p>
         )}
 
-        <section
+        <motion.section
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.4 }}
+          variants={fadeUpVariants}
           className="absolute left-[calc(50%_-_267px)] top-[2272px] w-[533px] text-center [direction:rtl]"
           aria-label="راهنمای حضور"
         >
@@ -409,10 +521,15 @@ export const LandingPage = (): JSX.Element => {
             رو رعایت کنید. ممنون که با همکاری‌تون به ما کمک می‌کنید تا میزبان
             خوبی براتون باشیم.
           </p>
-        </section>
+        </motion.section>
 
-        <section
-          className="absolute left-[calc(50%_-_198px)] top-[2439px] w-[398px] text-center [direction:rtl]"
+        <motion.section
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.4 }}
+          variants={fadeUpVariants}
+          className="absolute left-[calc(50%_-_198px)] w-[398px] text-center [direction:rtl]"
+          style={{ top: 2439 }}
           aria-label="زمان و مکان مراسم"
         >
           <p className="text-[23.3px] font-normal leading-[normal] text-white">
@@ -427,10 +544,16 @@ export const LandingPage = (): JSX.Element => {
             خودرو شخصی‌تون هم می‌توانید از پارکینگ جنوبی نمایشگاه استفاده
             کنید.
           </p>
-        </section>
+        </motion.section>
 
-        <button
+        <motion.button
           type="button"
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.6 }}
+          variants={scaleInVariants}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
           onClick={() =>
             window.open("https://maps.app.goo.gl/7KhUzJXBzJSDo5Tm7", "_blank", "noopener")
           }
@@ -442,64 +565,85 @@ export const LandingPage = (): JSX.Element => {
             alt="نقشه مسیر"
             className="h-full w-full object-cover"
           />
-        </button>
+        </motion.button>
 
-        <Button
-          type="button"
-          variant="secondary"
-          className="absolute left-[calc(50%_-_158px)] top-[2950px] h-[27px] w-[90px] rounded-[10.25px] bg-[#d9d9d9] p-0 text-[15.9px] font-normal text-black hover:bg-[#d9d9d9]/90"
-          dir="rtl"
-          onClick={() =>
-            window.open("https://maps.app.goo.gl/7KhUzJXBzJSDo5Tm7", "_blank", "noopener")
-          }
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.8 }}
+          variants={fadeInVariants}
+          className="absolute left-[calc(50%_-_158px)] top-[2950px]"
         >
-          مسیریابی
-        </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            className="h-[27px] w-[90px] rounded-[10.25px] bg-[#d9d9d9] p-0 text-[15.9px] font-normal text-black hover:bg-[#d9d9d9]/90"
+            dir="rtl"
+            onClick={() =>
+              window.open("https://maps.app.goo.gl/7KhUzJXBzJSDo5Tm7", "_blank", "noopener")
+            }
+          >
+            مسیریابی
+          </Button>
+        </motion.div>
 
-        <section
+        <motion.section
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.6 }}
+          variants={fadeUpVariants}
           className="absolute left-[calc(50%_-_158px)] top-[3004px] w-[306px] text-center [direction:rtl]"
           aria-labelledby="attendance-question"
         >
           <h2 id="attendance-question" className="text-xl font-normal leading-[normal] text-white">
             راستی، اگر بهمون بگی می‌تونی بیای یا نه ممنون میشیم.
           </h2>
-        </section>
+        </motion.section>
 
-        <div
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.6 }}
+          variants={buttonsContainerVariants}
           className="absolute left-[calc(50%_-_166px)] top-[3079px] flex w-[335px] justify-between"
           dir="rtl"
           role="group"
           aria-label="پاسخ حضور در مراسم"
         >
-          <Button
-            type="button"
-            variant="ghost"
-            disabled={rsvpSubmitting || loading}
-            aria-pressed={attendance === "decline"}
-            onClick={handleDeclineClick}
-            className={attendanceOptions[0].className}
-          >
-            {attendanceOptions[0].label}
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            disabled={rsvpSubmitting || loading}
-            aria-pressed={attendance === "accept"}
-            onClick={handleAcceptClick}
-            className={attendanceOptions[1].className}
-          >
-            {attendanceOptions[1].label}
-          </Button>
-        </div>
+          <motion.div variants={buttonItemVariants} whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}>
+            <Button
+              type="button"
+              variant="ghost"
+              disabled={rsvpSubmitting || loading}
+              aria-pressed={attendance === "decline"}
+              onClick={handleDeclineClick}
+              className={attendanceOptions[0].className}
+            >
+              {attendanceOptions[0].label}
+            </Button>
+          </motion.div>
+          <motion.div variants={buttonItemVariants} whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}>
+            <Button
+              type="button"
+              variant="ghost"
+              disabled={rsvpSubmitting || loading}
+              aria-pressed={attendance === "accept"}
+              onClick={handleAcceptClick}
+              className={attendanceOptions[1].className}
+            >
+              {attendanceOptions[1].label}
+            </Button>
+          </motion.div>
+        </motion.div>
 
-        {/*
-          فرم شماره تلفن: دقیقاً همون جایی که قبلاً پیام "عالی همدیگه رو
-          می‌بینیم" نمایش داده می‌شد (top-3166) قرار می‌گیره، چون این دو هیچ‌وقت
-          هم‌زمان نمایش داده نمی‌شن (یا فرم بازه، یا پیام تایید نشون داده میشه).
-        */}
         {showPhoneInput && (
-          <div className="absolute left-[calc(50%_-_150px)] top-[3160px] w-[300px] text-center [direction:rtl]">
+          <motion.div
+            initial={{ opacity: 0, y: 16, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -8, scale: 0.96 }}
+            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+            className="absolute left-[calc(50%_-_150px)] top-[3160px] w-[300px] text-center [direction:rtl]"
+          >
             <input
               type="tel"
               inputMode="numeric"
@@ -515,48 +659,63 @@ export const LandingPage = (): JSX.Element => {
               autoFocus
             />
             {phoneError && (
-              <p className="mt-1 text-sm text-red-300">{phoneError}</p>
+              <motion.p
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-1 text-sm text-red-300"
+              >
+                {phoneError}
+              </motion.p>
             )}
             <div className="mt-2 flex gap-2">
-              <Button
-                type="button"
-                className="h-[34px] flex-1 rounded-[10.32px] bg-[#89cf84] p-0 font-semibold text-base text-[#555555] hover:bg-[#89cf84]/90"
-                disabled={rsvpSubmitting}
-                onClick={handlePhoneSubmit}
-              >
-                {rsvpSubmitting ? "در حال ثبت…" : "ثبت و تایید"}
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                className="h-[34px] flex-1 rounded-[10.32px] bg-white/10 p-0 font-medium text-base text-white"
-                disabled={rsvpSubmitting}
-                onClick={handleCancelPhoneInput}
-              >
-                انصراف
-              </Button>
+              <motion.div className="flex-1" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                <Button
+                  type="button"
+                  className="h-[34px] w-full rounded-[10.32px] bg-[#89cf84] p-0 font-semibold text-base text-[#555555] hover:bg-[#89cf84]/90"
+                  disabled={rsvpSubmitting}
+                  onClick={handlePhoneSubmit}
+                >
+                  {rsvpSubmitting ? "در حال ثبت…" : "ثبت و تایید"}
+                </Button>
+              </motion.div>
+              <motion.div className="flex-1" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="h-[34px] w-full rounded-[10.32px] bg-white/10 p-0 font-medium text-base text-white"
+                  disabled={rsvpSubmitting}
+                  onClick={handleCancelPhoneInput}
+                >
+                  انصراف
+                </Button>
+              </motion.div>
             </div>
-          </div>
+          </motion.div>
         )}
 
         {rsvpError && (
-          <p className="absolute left-[calc(50%_-_150px)] top-[3140px] w-[300px] text-center text-sm text-red-300 [direction:rtl]">
+          <motion.p
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="absolute left-[calc(50%_-_150px)] top-[3140px] w-[300px] text-center text-sm text-red-300 [direction:rtl]"
+          >
             {rsvpError}
-          </p>
+          </motion.p>
         )}
 
-        {/*
-          پیام تایید نهایی فقط وقتی نشون داده میشه که:
-          - جواب ثبت‌شده روی سرور "accept" باشه
-          - شماره تلفن واقعاً ذخیره شده باشه
-          - فرم شماره الان بسته باشه (تا با فرم هم‌پوشانی نداشته باشه)
-        */}
         {attendance === "accept" && savedPhone && !showPhoneInput && (
-          <>
+          <motion.div
+            initial={{ opacity: 0, y: 12, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          >
             <p className="absolute left-[calc(50%_-_125px)] top-[3166px] w-[249px] text-center text-xl font-medium leading-[normal] text-white [direction:rtl]">
               عالی؛ پس همدیگه رو می‌بینیم
             </p>
-            <img
+            <motion.img
+              initial={{ scale: 0, rotate: -30 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{ delay: 0.2, duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }}
               className="absolute left-[calc(50%_-_14px)] top-[3211px] h-7 w-7"
               alt="Line md confirm"
               src="https://c.animaapp.com/yMsQIt4gcRaRivWzIussoA/img/line-md-confirm-circle-filled.svg"
@@ -568,12 +727,31 @@ export const LandingPage = (): JSX.Element => {
             >
               ویرایش شماره
             </button>
-          </>
+          </motion.div>
         )}
 
-        {illustrationAssets.slice(3).map((asset) => (
-          <img key={asset.src} className={asset.className} alt={asset.alt} src={asset.src} />
-        ))}
+        {/* --- illustration های پایین صفحه --- */}
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.2 }}
+          variants={illustrationContainerVariants}
+        >
+          {illustrationAssetsBottom.map((asset, i) => (
+            <motion.img
+              key={asset.src}
+              variants={illustrationItemVariants}
+              animate={
+                asset.float
+                  ? { y: [0, -14, 0], transition: floatTransition(i * 0.4) }
+                  : undefined
+              }
+              className={asset.className}
+              alt={asset.alt}
+              src={asset.src}
+            />
+          ))}
+        </motion.div>
       </div>
     </main>
   );
