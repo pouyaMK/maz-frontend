@@ -6,7 +6,7 @@
 
 // توجه: اسلش انتهایی عمداً حذف شده تا با path هایی که با "/" شروع میشن
 // دوبار اسلش (base//path) تولید نشه.
-export const BASE_URL = "http://mazeverest.ir";
+export const BASE_URL = "https://mazeverest.ir";
 
 const TOKEN_KEY = "maz_admin_token";
 
