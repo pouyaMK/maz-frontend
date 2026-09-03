@@ -609,23 +609,34 @@ export const LandingPage = (): JSX.Element => {
   };
 
   const handleDeclineClick = async () => {
-    if (!slug || rsvpSubmitting) return;
-    if (attendance === "decline") return;
-
+    if (rsvpSubmitting) return;
+  
     setRsvpError(null);
     setPhoneError(null);
     setShowPhoneInput(false);
+  
+    // اگر قبلاً هم "نه" انتخاب شده، فقط پاپ‌آپ را باز کن
+    if (attendance === "decline") {
+      openThankYou();
+      return;
+    }
+  
+    if (!slug) return;
+  
     setRsvpSubmitting(true);
-
+  
     const previousAttendance = attendance;
     const previousPhone = savedPhone;
-
+  
     setAttendance("decline");
     setSavedPhone(null);
-
+  
     try {
       const updated = await submitRsvp(slug, { attending: false });
+  
       setInvite(updated);
+  
+      // باز کردن پاپ‌آپ بعد از ثبت موفق
       openThankYou();
     } catch {
       setAttendance(previousAttendance);
