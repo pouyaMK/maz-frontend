@@ -30,7 +30,7 @@ const DESIGN_HEIGHT = 3841;
 // both layouts show an identical pre-play cover.
 // ---------------------------------------------------------------------------
 const MOBILE_DESIGN_WIDTH = 412;
-const MOBILE_DESIGN_HEIGHT = 3287;
+const MOBILE_DESIGN_HEIGHT = 3377;
 
 const mobileAssets = {
   background: "https://c.animaapp.com/j2Z4elB0FAOagPN5IVLHVg/img/vector.svg",
@@ -1159,11 +1159,11 @@ export const LandingPage = (): JSX.Element => {
           the same COVER_IMAGE_SRC as desktop.
          ================================================================= */}
       <main
-        className="relative flex w-full justify-center overflow-hidden bg-[#06296a] md:hidden"
+        className="relative flex w-full justify-center overflow-hidden bg-[#02205f] md:hidden"
         style={{ height: MOBILE_DESIGN_HEIGHT * mobileScale }}
       >
         <div
-          className="relative h-[3287px] w-[412px] shrink-0 origin-top overflow-hidden"
+          className="relative h-[3377px] w-[412px] shrink-0 origin-top overflow-hidden"
           style={{ transform: `scale(${mobileScale})` }}
           data-model-id="1:200-responsive"
         >
@@ -1353,6 +1353,12 @@ export const LandingPage = (): JSX.Element => {
               <br />
               سالن شماره ۵
             </p>
+            <div className="absolute left-1/2 top-full mt-2 w-[290px] -translate-x-1/2 text-[15px] font-normal leading-[24px] text-white/85">
+              برای راحتی بیشتر شما عزیزان، خودروهای برقی نمایشگاه از ورودی
+              جنوبی تا محل برگزاری جشن و بالعکس در خدمت شما هستند. برای پارک
+              خودرو شخصی‌تون هم می‌توانید از پارکینگ جنوبی نمایشگاه استفاده
+              کنید.
+            </div>
           </motion.section>
 
           <motion.section
@@ -1360,7 +1366,7 @@ export const LandingPage = (): JSX.Element => {
             whileInView="visible"
             viewport={{ once: true, amount: 0.4 }}
             variants={mobileScaleInVariants}
-            className="absolute left-[calc(50%_-_145px)] top-[2136px] flex w-[316px] flex-col items-center"
+            className="absolute left-[calc(50%_-_145px)] top-[2226px] flex w-[316px] flex-col items-center"
             aria-label="نقشه محل برگزاری"
           >
             <motion.button
@@ -1386,14 +1392,14 @@ export const LandingPage = (): JSX.Element => {
               مسیریابی
             </Button>
           </motion.section>
-          <MazeMapDecoration className="pointer-events-none absolute left-[23.79%] top-[71.71%] h-[3.81%] w-[6.05%]" />
+          <MazeMapDecoration className="pointer-events-none absolute left-[23.79%] top-[72.2%] h-[3.81%] w-[6.05%]" />
 
           <motion.img
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, amount: 0.4 }}
             variants={mobileFadeInVariants}
-            className="absolute left-[89px] top-[2497px] h-[138px] w-[27px]"
+            className="absolute left-[89px] top-[2587px] h-[138px] w-[27px]"
             alt="Group"
             src={mobileAssets.sideGroup}
           />
@@ -1403,7 +1409,7 @@ export const LandingPage = (): JSX.Element => {
             whileInView="visible"
             viewport={{ once: true, amount: 0.5 }}
             variants={mobileFadeUpVariants}
-            className="absolute left-[calc(50%_-_173px)] top-[2668px] w-[335px]"
+            className="absolute left-[calc(50%_-_173px)] top-[2758px] w-[335px]"
             aria-labelledby="rsvp-title-mobile"
           >
             <h2
@@ -1520,7 +1526,7 @@ export const LandingPage = (): JSX.Element => {
               initial={{ opacity: 0, y: 10, scale: 0.96 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-              className="absolute left-[calc(50%_-_125px)] top-[2859px] flex h-[72px] w-[251px] flex-col items-center gap-[18.6px]"
+              className="absolute left-[calc(50%_-_125px)] top-[2949px] flex h-[72px] w-[251px] flex-col items-center gap-[18.6px]"
               aria-live="polite"
               dir="rtl"
             >
@@ -1545,7 +1551,7 @@ export const LandingPage = (): JSX.Element => {
             </motion.section>
           )}
 
-          <MazeFooterIllustration className="absolute left-0 top-[2999px] h-[200px] w-[376px]" />
+          <MazeFooterIllustration className="absolute left-0 top-[3089px] h-[200px] w-[376px]" />
         </div>
       </main>
 
