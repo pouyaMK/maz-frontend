@@ -134,7 +134,7 @@ const IRAN_MOBILE_REGEX = /^09\d{9}$/;
 
 // Venue location — single source of truth so both desktop and mobile map
 // buttons/CTAs always point to the same place.
-const VENUE_MAP_URL = "https://maps.google.com/?q=35.787979,51.402721";
+const VENUE_MAP_URL = "https://www.google.com/maps?q=35.787979,51.402721";
 
 // ---------------------------------------------------------------------------
 // Framer Motion variants — desktop
