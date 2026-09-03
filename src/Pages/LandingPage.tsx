@@ -685,7 +685,7 @@ export const LandingPage = (): JSX.Element => {
     setPhone(savedPhone ?? "");
   };
 
-  const displayName = invite?.name ?? "مهمان عزیز";
+  const displayName = invite?.name ?? "مهمان";
   const guestVideoUrl = buildVideoUrl(invite?.name_en);
   const activeVideoSrc =
     guestVideoUrl && !guestVideoFailed ? guestVideoUrl : DEFAULT_GUEST_VIDEO_SRC;
