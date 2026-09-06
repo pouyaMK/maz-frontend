@@ -48,6 +48,10 @@ input:-webkit-autofill:active {
 }
 
 
+button {
+  cursor: pointer;
+}
+
 
 @font-face {
   font-family: YekanBakh;

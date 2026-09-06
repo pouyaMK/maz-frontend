@@ -38,13 +38,19 @@ const router = createBrowserRouter([
     ],
   },
 
+  // {
+  //   path: "/admin",
+  //   element: (
+  //     <RequireAuth>
+  //       <Dashboard />
+  //     </RequireAuth>
+  //   ),
+  //   errorElement: <div>Page Not Found</div>,
+  // },
+
   {
     path: "/admin",
-    element: (
-      <RequireAuth>
-        <Dashboard />
-      </RequireAuth>
-    ),
+    element: <Dashboard />,
     errorElement: <div>Page Not Found</div>,
   },
 
