@@ -152,6 +152,13 @@ export interface CheckInResponse {
   participant: AdminParticipant;
 }
 
+// پاسخ اندپوینت لغو چک‌این (DELETE) — was_checked_in یعنی قبل از این
+// درخواست وضعیتش چی بوده (برای تشخیص no-op از تغییر واقعی)
+export interface UndoCheckInResponse {
+  was_checked_in: boolean;
+  participant: AdminParticipant;
+}
+
 export interface ImportResult {
   created: number;
   updated: number;
@@ -206,6 +213,15 @@ export function getParticipant(invitationId: number) {
 export function checkIn(invitationId: number) {
   return request<CheckInResponse>(`/api/event/participants/${invitationId}/check-in`, {
     method: "POST",
+    auth: true,
+  });
+}
+
+// لغو چک‌این (اصلاح خطای اسکن اشتباه در لحظه). Idempotent است: لغو یه
+// چک‌این که از قبل لغو شده، خطا نمی‌ده و فقط was_checked_in: false برمی‌گرده.
+export function undoCheckIn(invitationId: number) {
+  return request<UndoCheckInResponse>(`/api/event/participants/${invitationId}/check-in`, {
+    method: "DELETE",
     auth: true,
   });
 }

@@ -1,9 +1,11 @@
+import type { ReactNode } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, LogOut, Crown, Check, Loader2, Users, UserCheck, X } from "lucide-react";
+import { Search, LogOut, Crown, Check, Loader2, Users, UserCheck, X, Undo2 } from "lucide-react";
 import {
   searchParticipants,
   checkIn,
+  undoCheckIn,
   getStats,
   clearToken,
   ApiError,
@@ -12,6 +14,36 @@ import {
 } from "../../lib/api";
 
 const SEARCH_DEBOUNCE_MS = 300;
+
+// اگه اپراتور چک‌باکس «دیگه نشون نده» رو تو دیالوگ بزنه، این تو localStorage
+// ذخیره می‌شه و از اون به بعد چک‌این/لغو بدون دیالوگ و مستقیم انجام می‌شه.
+const SKIP_CONFIRM_KEY = "maz_skip_checkin_confirm";
+
+function getSkipConfirmPref(): boolean {
+  try {
+    return localStorage.getItem(SKIP_CONFIRM_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function setSkipConfirmPref(value: boolean): void {
+  try {
+    if (value) {
+      localStorage.setItem(SKIP_CONFIRM_KEY, "1");
+    } else {
+      localStorage.removeItem(SKIP_CONFIRM_KEY);
+    }
+  } catch {
+    // localStorage در دسترس نیست (مثلاً حالت خصوصی)؛ صرفاً هر بار دیالوگ نشون داده می‌شه
+  }
+}
+
+// نوع عملی که قراره رو یه مهمون انجام بشه: ثبت ورود یا لغوش
+type PendingAction = {
+  participant: AdminParticipant;
+  mode: "check-in" | "undo";
+};
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -23,13 +55,14 @@ const Dashboard = () => {
 
   const [stats, setStats] = useState<EventStats | null>(null);
 
-  // آیدی مهمون‌هایی که همین الان دارن چک‌این می‌شن (برای غیرفعال کردن دکمه حین درخواست)
-  const [checkingInIds, setCheckingInIds] = useState<Set<number>>(new Set());
+  // آیدی مهمون‌هایی که همین الان در حال چک‌این/لغو هستن (برای غیرفعال کردن دکمه حین درخواست)
+  const [busyIds, setBusyIds] = useState<Set<number>>(new Set());
 
-  // مهمونی که منتظر تأیید کاربره (دیالوگ تأیید باز است روی این نفر)
-  // چک‌این idempotent و یک‌طرفه است (بک‌اند راهی برای undo نداره)، پس قبل از
-  // ثبت نهایی از اپراتور تأیید می‌گیریم تا کلیک اشتباهی قابل جبران نباشه.
-  const [pendingParticipant, setPendingParticipant] = useState<AdminParticipant | null>(null);
+  // عملی که منتظر تأیید کاربره (دیالوگ باز است روی این نفر و این نوع عمل)
+  const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
+
+  // مقدار اولیه‌ی چک‌باکس تو دیالوگ، از ترجیح ذخیره‌شده خونده می‌شه
+  const [skipConfirm, setSkipConfirm] = useState<boolean>(getSkipConfirmPref);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const requestSeq = useRef(0);
@@ -89,40 +122,70 @@ const Dashboard = () => {
     navigate("/login", { replace: true });
   };
 
-  // ---------- درخواست ثبت ورود (باز کردن دیالوگ تأیید) ----------
-  const requestCheckIn = (participant: AdminParticipant) => {
-    if (participant.checked_in) return; // از قبل ثبت شده، کاری نکن
-    if (checkingInIds.has(participant.id)) return;
-    setPendingParticipant(participant);
+  // ---------- اجرای واقعی چک‌این یا لغو روی سرور ----------
+  const runAction = useCallback(
+    async (action: PendingAction) => {
+      const { participant, mode } = action;
+      setBusyIds((prev) => new Set(prev).add(participant.id));
+
+      try {
+        if (mode === "check-in") {
+          const res = await checkIn(participant.id);
+          setResults((prev) =>
+            prev.map((p) => (p.id === participant.id ? res.participant : p))
+          );
+        } else {
+          const res = await undoCheckIn(participant.id);
+          setResults((prev) =>
+            prev.map((p) => (p.id === participant.id ? res.participant : p))
+          );
+        }
+        refreshStats();
+      } catch (err) {
+        setLoadError(
+          err instanceof ApiError
+            ? err.message
+            : mode === "check-in"
+            ? "ثبت ورود انجام نشد. دوباره تلاش کنید."
+            : "لغو ورود انجام نشد. دوباره تلاش کنید."
+        );
+      } finally {
+        setBusyIds((prev) => {
+          const next = new Set(prev);
+          next.delete(participant.id);
+          return next;
+        });
+      }
+    },
+    [refreshStats]
+  );
+
+  // ---------- کلیک روی دکمه‌ی تیک: بسته به وضعیت فعلی، درخواست چک‌این یا لغو ----------
+  const handleToggleClick = (participant: AdminParticipant) => {
+    if (busyIds.has(participant.id)) return;
+
+    const mode: PendingAction["mode"] = participant.checked_in ? "undo" : "check-in";
+    const action: PendingAction = { participant, mode };
+
+    if (getSkipConfirmPref()) {
+      runAction(action);
+    } else {
+      setPendingAction(action);
+    }
   };
 
-  const cancelCheckIn = () => setPendingParticipant(null);
+  const cancelPendingAction = () => setPendingAction(null);
 
-  // ---------- ثبت نهایی ورود (بعد از تأیید در دیالوگ) ----------
-  const confirmCheckIn = async () => {
-    const participant = pendingParticipant;
-    if (!participant) return;
+  const confirmPendingAction = () => {
+    const action = pendingAction;
+    if (!action) return;
+    setPendingAction(null);
+    runAction(action);
+  };
 
-    setPendingParticipant(null);
-    setCheckingInIds((prev) => new Set(prev).add(participant.id));
-
-    try {
-      const res = await checkIn(participant.id);
-      setResults((prev) =>
-        prev.map((p) => (p.id === participant.id ? res.participant : p))
-      );
-      refreshStats();
-    } catch (err) {
-      setLoadError(
-        err instanceof ApiError ? err.message : "ثبت ورود انجام نشد. دوباره تلاش کنید."
-      );
-    } finally {
-      setCheckingInIds((prev) => {
-        const next = new Set(prev);
-        next.delete(participant.id);
-        return next;
-      });
-    }
+  const handleSkipConfirmChange = (checked: boolean) => {
+    setSkipConfirm(checked);
+    setSkipConfirmPref(checked);
   };
 
   return (
@@ -214,21 +277,23 @@ const Dashboard = () => {
             <GuestRow
               key={p.id}
               participant={p}
-              checkingIn={checkingInIds.has(p.id)}
-              onCheckIn={() => requestCheckIn(p)}
+              busy={busyIds.has(p.id)}
+              onToggle={() => handleToggleClick(p)}
             />
           ))}
         </div>
       </main>
 
       {/* ==================================================
-          CONFIRM DIALOG — چون ثبت ورود یک‌طرفه و غیرقابل بازگشته
+          CONFIRM DIALOG — برای چک‌این و لغو چک‌این، هر دو
       ================================================== */}
-      {pendingParticipant && (
-        <ConfirmCheckInDialog
-          participant={pendingParticipant}
-          onCancel={cancelCheckIn}
-          onConfirm={confirmCheckIn}
+      {pendingAction && (
+        <ConfirmActionDialog
+          action={pendingAction}
+          skipConfirm={skipConfirm}
+          onSkipConfirmChange={handleSkipConfirmChange}
+          onCancel={cancelPendingAction}
+          onConfirm={confirmPendingAction}
         />
       )}
     </div>
@@ -245,7 +310,7 @@ const StatCard = ({
   value,
   accent,
 }: {
-  icon: React.ReactNode;
+  icon: ReactNode;
   label: string;
   value: number;
   accent?: boolean;
@@ -261,16 +326,19 @@ const StatCard = ({
 
 /* ============================================================
    GUEST ROW
+   دکمه‌ی تیک حالا toggle است: اگه چک‌این نشده باشه کلیک = درخواست
+   چک‌این، اگه چک‌این شده باشه کلیک = درخواست لغو (هر دو از پشت یک
+   دیالوگ تأیید مشترک رد می‌شن مگر این‌که کاربر skip رو زده باشه).
 ============================================================ */
 
 const GuestRow = ({
   participant,
-  checkingIn,
-  onCheckIn,
+  busy,
+  onToggle,
 }: {
   participant: AdminParticipant;
-  checkingIn: boolean;
-  onCheckIn: () => void;
+  busy: boolean;
+  onToggle: () => void;
 }) => {
   const { name, is_vip, checked_in } = participant;
 
@@ -288,21 +356,21 @@ const GuestRow = ({
       </div>
 
       <button
-        onClick={onCheckIn}
-        disabled={checked_in || checkingIn}
+        onClick={onToggle}
+        disabled={busy}
         className={`
           flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition
           ${
             checked_in
-              ? "border-emerald-400/60 bg-emerald-500/20 text-emerald-400"
+              ? "border-emerald-400/60 bg-emerald-500/20 text-emerald-400 hover:border-red-400/50 hover:bg-red-500/10 hover:text-red-400"
               : "border-white/15 bg-white/5 text-white/50 hover:border-emerald-400/50 hover:bg-emerald-500/10 hover:text-emerald-400"
           }
-          disabled:cursor-default
+          disabled:pointer-events-none disabled:opacity-70
         `}
-        aria-label={checked_in ? "ورود ثبت شده" : "ثبت ورود"}
-        title={checked_in ? "ورود ثبت شده" : "ثبت ورود"}
+        aria-label={checked_in ? "ورود ثبت شده — لغو ورود" : "ثبت ورود"}
+        title={checked_in ? "ورود ثبت شده — برای لغو کلیک کنید" : "ثبت ورود"}
       >
-        {checkingIn ? (
+        {busy ? (
           <Loader2 size={18} className="animate-spin" />
         ) : (
           <Check size={20} strokeWidth={checked_in ? 3 : 2} />
@@ -313,20 +381,28 @@ const GuestRow = ({
 };
 
 /* ============================================================
-   CONFIRM CHECK-IN DIALOG
-   ساده و بدون انیمیشن اضافه، هم‌راستا با خواسته‌ی «داشبورد ساده،
-   بدون شلوغ‌کاری». فقط یک لایه‌ی محافظتی قبل از یک عمل برگشت‌ناپذیر.
+   CONFIRM ACTION DIALOG
+   یک دیالوگ مشترک برای هر دو عمل (ثبت / لغو ورود)، ساده و بدون
+   انیمیشن اضافه. یک چک‌باکس داره که با تیک خوردنش، از این به بعد
+   این دیالوگ اصلاً نشون داده نمی‌شه (ذخیره در localStorage).
 ============================================================ */
 
-const ConfirmCheckInDialog = ({
-  participant,
+const ConfirmActionDialog = ({
+  action,
+  skipConfirm,
+  onSkipConfirmChange,
   onCancel,
   onConfirm,
 }: {
-  participant: AdminParticipant;
+  action: PendingAction;
+  skipConfirm: boolean;
+  onSkipConfirmChange: (checked: boolean) => void;
   onCancel: () => void;
   onConfirm: () => void;
 }) => {
+  const { participant, mode } = action;
+  const isUndo = mode === "undo";
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4"
@@ -340,11 +416,23 @@ const ConfirmCheckInDialog = ({
       >
         <div className="mb-4 flex items-start justify-between gap-3">
           <div>
-            <h2 className="text-base font-bold text-white">تأیید ثبت ورود</h2>
+            <h2 className="text-base font-bold text-white">
+              {isUndo ? "لغو ثبت ورود" : "تأیید ثبت ورود"}
+            </h2>
             <p className="mt-1 text-sm leading-6 text-white/60">
-              ورود{" "}
-              <span className="font-semibold text-white">{participant.name}</span>{" "}
-              ثبت بشه؟ این عمل قابل بازگشت نیست.
+              {isUndo ? (
+                <>
+                  ورود{" "}
+                  <span className="font-semibold text-white">{participant.name}</span>{" "}
+                  لغو بشه؟
+                </>
+              ) : (
+                <>
+                  ورود{" "}
+                  <span className="font-semibold text-white">{participant.name}</span>{" "}
+                  ثبت بشه؟
+                </>
+              )}
             </p>
           </div>
           <button
@@ -363,6 +451,16 @@ const ConfirmCheckInDialog = ({
           </div>
         )}
 
+        <label className="mb-4 flex cursor-pointer items-center gap-2 text-xs text-white/50">
+          <input
+            type="checkbox"
+            checked={skipConfirm}
+            onChange={(e) => onSkipConfirmChange(e.target.checked)}
+            className="h-4 w-4 rounded border-white/25 bg-white/5 accent-emerald-500"
+          />
+          <span>دیگر این پیام را نشان نده</span>
+        </label>
+
         <div className="flex gap-2">
           <button
             onClick={onCancel}
@@ -372,9 +470,20 @@ const ConfirmCheckInDialog = ({
           </button>
           <button
             onClick={onConfirm}
-            className="h-11 flex-1 rounded-xl bg-emerald-500 text-sm font-bold text-white transition hover:bg-emerald-400"
+            className={`h-11 flex-1 rounded-xl text-sm font-bold text-white transition ${
+              isUndo
+                ? "bg-red-500 hover:bg-red-400"
+                : "bg-emerald-500 hover:bg-emerald-400"
+            }`}
           >
-            تأیید ورود
+            {isUndo ? (
+              <span className="flex items-center justify-center gap-1.5">
+                <Undo2 size={16} />
+                لغو
+              </span>
+            ) : (
+              "تأیید ورود"
+            )}
           </button>
         </div>
       </div>
