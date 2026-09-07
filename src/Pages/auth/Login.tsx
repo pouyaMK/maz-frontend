@@ -3,27 +3,18 @@ import * as Yup from "yup";
 import { useNavigate } from "react-router-dom";
 import AnimatedMaze from "../../components/maze/AnimatedMaze";
 import { AnimatePresence, motion } from "framer-motion";
-import {
-  User,
-  LockKeyhole,
-  Eye,
-  EyeOff,
-  ArrowLeft,
-  Check,
-} from "lucide-react";
-import { useState } from "react";
+import { User, LockKeyhole, Eye, EyeOff, ArrowLeft } from "lucide-react";
+import { useEffect, useState } from "react";
 import { login, setToken, ApiError } from "../../lib/api";
 
 interface LoginValues {
   username: string;
   password: string;
-  remember: boolean;
 }
 
 const initialValues: LoginValues = {
   username: "",
   password: "",
-  remember: false,
 };
 
 const validationSchema = Yup.object({
@@ -37,11 +28,27 @@ const validationSchema = Yup.object({
     .required("رمز عبور الزامی است"),
 });
 
+// اگه انیمیشن AnimatedMaze به هر دلیلی (باگ، دیوایس کند، مرورگر خاص) هیچوقت
+// onComplete رو صدا نزنه، کاربر نباید پشت یه صفحه‌ی خالی قفل بمونه و نتونه
+// لاگین کنه. این تایم‌اوت یه فال‌بک امنه: بعد از چند ثانیه، فرم رو به هر حال
+// نشون می‌ده، حتی اگه انیمیشن تموم نشده باشه.
+const MAZE_FALLBACK_TIMEOUT_MS = 4000;
+
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [mazeDone, setMazeDone] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setMazeDone(true);
+    }, MAZE_FALLBACK_TIMEOUT_MS);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  const handleMazeComplete = () => setMazeDone(true);
 
   const handleSubmit = async (values: LoginValues) => {
     setLoginError(null);
@@ -53,12 +60,20 @@ export default function Login() {
       setToken(res.access_token);
       navigate("/admin");
     } catch (err) {
-      if (err instanceof ApiError && err.status === 422) {
-        setLoginError("نام کاربری یا رمز عبور نامعتبر است.");
-      } else if (err instanceof ApiError) {
-        setLoginError("نام کاربری یا رمز عبور اشتباه است.");
+      if (err instanceof ApiError) {
+        if (err.status === 401) {
+          // احراز هویت رد شده: یوزرنیم یا پسورد اشتباهه
+          setLoginError("نام کاربری یا رمز عبور اشتباه است.");
+        } else if (err.status === 422) {
+          // خطای اعتبارسنجی ورودی سمت سرور (فیلد خالی/فرمت غلط)
+          setLoginError("اطلاعات وارد شده نامعتبر است.");
+        } else if (err.status >= 500) {
+          setLoginError("سرور در دسترس نیست. چند لحظه دیگر دوباره تلاش کنید.");
+        } else {
+          setLoginError("ورود ناموفق بود. دوباره تلاش کنید.");
+        }
       } else {
-        setLoginError("خطا در ارتباط با سرور. دوباره تلاش کنید.");
+        setLoginError("خطا در ارتباط با سرور. اتصال اینترنت خود را بررسی کنید.");
       }
     }
   };
@@ -77,7 +92,7 @@ export default function Login() {
     >
 
 <AnimatedMaze
-  onComplete={() => setMazeDone(true)}
+  onComplete={handleMazeComplete}
 />
 
 <AnimatePresence>
@@ -355,7 +370,7 @@ export default function Login() {
                       focus:bg-white/8
                       focus:ring-4
                       focus:ring-[#055AFF]/10
-                      sm:h-[15.5
+                      sm:h-[62px]
                     "
                   />
                 </div>
@@ -404,7 +419,7 @@ export default function Login() {
                         border-white/16
                         bg-white/5.5
                         pr-13
-                        pl-
+                        pl-12
                         text-sm
                         text-white
                         outline-none
@@ -465,87 +480,6 @@ export default function Login() {
                       text-red-300
                     "
                   />
-
-                </div>
-                <div
-                  className="
-                    flex
-                    items-center
-                    justify-between
-                    gap-3
-                    text-[11px]
-                    sm:text-xs
-                  "
-                >
-                  <label
-                    className="
-                      flex
-                      cursor-pointer
-                      select-none
-                      items-center
-                      gap-2
-                      text-white/65
-                    "
-                  >
-
-                    <Field
-                      type="checkbox"
-                      name="remember"
-                      className="peer sr-only"
-                    />
-
-                    <span
-                      className="
-                        flex
-                        h-5.25
-                        w-5.25
-                        shrink-0
-                        items-center
-                        justify-center
-                        rounded-md
-                        border
-                        border-white/30
-                        bg-white/4
-                        transition-all
-
-                        peer-checked:border-[#03D54A]
-                        peer-checked:bg-[#03D54A]
-                        peer-checked:shadow-[0_0_18px_rgba(3,213,74,0.3)]
-                      "
-                    >
-                      <Check
-                        size={13}
-                        strokeWidth={3}
-                        className="
-                          scale-0
-                          text-white
-                          transition-transform
-                          peer-checked:scale-100
-                        "
-                      />
-                    </span>
-
-                    <span>
-                      مرا به خاطر بسپار
-                    </span>
-
-                  </label>
-
-                  <button
-                    type="button"
-                    className="
-                      shrink-0
-                      border-none
-                      bg-transparent
-                      font-inherit
-                      text-[#03D54A]
-                      transition
-                      hover:text-[#58ed88]
-                      hover:underline
-                    "
-                  >
-                    رمز عبور را فراموش کردید؟
-                  </button>
 
                 </div>
 

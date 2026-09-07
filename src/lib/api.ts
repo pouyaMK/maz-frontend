@@ -1,11 +1,3 @@
-// src/lib/api.ts
-//
-// یه لایه ساده روی fetch که با API واقعی هماهنگه.
-// نکته مهم: بک‌اند فعلاً فقط http داره (نه https) - وقتی سرور https گرفت
-// فقط کافیه BASE_URL رو عوض کنی.
-
-// توجه: اسلش انتهایی عمداً حذف شده تا با path هایی که با "/" شروع میشن
-// دوبار اسلش (base//path) تولید نشه.
 export const BASE_URL = "https://mazeverest.ir";
 
 const TOKEN_KEY = "maz_admin_token";
@@ -22,10 +14,6 @@ export function clearToken(): void {
   localStorage.removeItem(TOKEN_KEY);
 }
 
-// فیلد video_url که API برمی‌گردونه (مثلاً "/videos/A0355.mp4") قابل اعتماد نیست —
-// طبق تایید کارفرما، اسم واقعی فایل ویدیو روی سرور بر اساس name_en مهمونه،
-// نه بر اساس کد/آیدی. پس آدرس ویدیو رو مستقیم از name_en می‌سازیم:
-// http://mazeverest.ir/videos/{name_en}.mp4
 export function buildVideoUrl(nameEn: string | null | undefined): string | undefined {
   if (!nameEn) return undefined;
   return `${BASE_URL}/videos/${encodeURIComponent(nameEn)}.mp4`;
@@ -43,7 +31,7 @@ export class ApiError extends Error {
 }
 
 interface RequestOptions extends RequestInit {
-  auth?: boolean; // true => header Authorization اضافه میشه
+  auth?: boolean;
 }
 
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
@@ -70,6 +58,13 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     ...rest,
     headers: finalHeaders,
   });
+
+  if (auth && res.status === 401) {
+    clearToken();
+    if (typeof window !== "undefined" && window.location.pathname !== "/login") {
+      window.location.href = "/login";
+    }
+  }
 
   // بدنه خالی (مثل 204) رو هندل کن
   const text = await res.text();
