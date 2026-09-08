@@ -850,8 +850,6 @@ export const LandingPage = (): JSX.Element => {
             {!videoPlaying && (
               <motion.button
                 type="button"
-                whileHover={activeVideoSrc && videoReady ? { scale: 1.03 } : undefined}
-                whileTap={activeVideoSrc && videoReady ? { scale: 0.97 } : undefined}
                 onClick={() => {
                   if (!activeVideoSrc || !videoReady) return;
                   setVideoPlaying(true);
@@ -1276,7 +1274,6 @@ export const LandingPage = (): JSX.Element => {
               {!mobileVideoPlaying && (
                 <motion.button
                   type="button"
-                  whileTap={activeVideoSrc && mobileVideoReady ? { scale: 0.97 } : undefined}
                   onClick={() => {
                     if (!activeVideoSrc || !mobileVideoReady) return;
                     setMobileVideoPlaying(true);
