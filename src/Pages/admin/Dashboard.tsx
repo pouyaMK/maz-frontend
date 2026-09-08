@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, LogOut, Crown, Check, Loader2, Users, UserCheck, X, Undo2 } from "lucide-react";
 import {
@@ -45,6 +45,10 @@ type PendingAction = {
   mode: "check-in" | "undo";
 };
 
+// فیلترهای قابل انتخاب از روی کارت‌های آمار بالای صفحه.
+// "all" یعنی هیچ فیلتری فعال نیست (حالت پیش‌فرض).
+type StatFilter = "all" | "checked_in" | "vip_total" | "vip_checked_in";
+
 const Dashboard = () => {
   const navigate = useNavigate();
 
@@ -54,6 +58,9 @@ const Dashboard = () => {
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const [stats, setStats] = useState<EventStats | null>(null);
+
+  // فیلتر فعلاً فعال (با کلیک روی کارت‌های آمار تغییر می‌کنه)
+  const [activeFilter, setActiveFilter] = useState<StatFilter>("all");
 
   // آیدی مهمون‌هایی که همین الان در حال چک‌این/لغو هستن (برای غیرفعال کردن دکمه حین درخواست)
   const [busyIds, setBusyIds] = useState<Set<number>>(new Set());
@@ -188,6 +195,33 @@ const Dashboard = () => {
     setSkipConfirmPref(checked);
   };
 
+  // ---------- کلیک روی کارت‌های آمار: toggle فیلتر ----------
+  const handleStatClick = (filter: StatFilter) => {
+    setActiveFilter((prev) => (prev === filter ? "all" : filter));
+  };
+
+  // ---------- اعمال فیلتر روی نتایج فعلی (client-side) ----------
+  const visibleResults = useMemo(() => {
+    switch (activeFilter) {
+      case "checked_in":
+        return results.filter((p) => p.checked_in);
+      case "vip_total":
+        return results.filter((p) => p.is_vip);
+      case "vip_checked_in":
+        return results.filter((p) => p.is_vip && p.checked_in);
+      case "all":
+      default:
+        return results;
+    }
+  }, [results, activeFilter]);
+
+  const filterLabel: Record<StatFilter, string> = {
+    all: "",
+    checked_in: "ورود ثبت‌شده",
+    vip_total: "کل VIP",
+    vip_checked_in: "ورود VIP",
+  };
+
   return (
     <div dir="rtl" className="min-h-dvh w-full bg-[#03071a] text-white">
       {/* ==================================================
@@ -212,7 +246,8 @@ const Dashboard = () => {
 
       <main className="mx-auto flex w-[calc(100%-32px)] max-w-4xl flex-col gap-5 py-6">
         {/* ==================================================
-            STATS
+            STATS — هر کارت به‌جز «کل مهمان‌ها» قابل کلیک است و
+            به‌عنوان فیلتر روی لیست پایین عمل می‌کند
         ================================================== */}
         {stats && (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -226,17 +261,26 @@ const Dashboard = () => {
               label="ورود ثبت‌شده"
               value={stats.checked_in}
               accent
+              clickable
+              active={activeFilter === "checked_in"}
+              onClick={() => handleStatClick("checked_in")}
             />
             <StatCard
               icon={<Crown size={18} />}
               label="کل VIP"
               value={stats.vip_total}
+              clickable
+              active={activeFilter === "vip_total"}
+              onClick={() => handleStatClick("vip_total")}
             />
             <StatCard
               icon={<Crown size={18} />}
               label="ورود VIP"
               value={stats.vip_checked_in}
               accent
+              clickable
+              active={activeFilter === "vip_checked_in"}
+              onClick={() => handleStatClick("vip_checked_in")}
             />
           </div>
         )}
@@ -256,6 +300,21 @@ const Dashboard = () => {
           {loading && <Loader2 size={20} className="shrink-0 animate-spin text-white/40" />}
         </div>
 
+        {/* نشونه‌ی فیلتر فعال، با دکمه‌ی پاک کردن سریع */}
+        {activeFilter !== "all" && (
+          <div className="flex items-center gap-2 rounded-xl border border-blue-400/30 bg-blue-500/10 px-3.5 py-2 text-xs text-blue-200">
+            <span>فیلتر فعال: {filterLabel[activeFilter]}</span>
+            <span className="text-blue-300/70">({visibleResults.length} نفر)</span>
+            <button
+              onClick={() => setActiveFilter("all")}
+              className="mr-auto flex items-center gap-1 rounded-lg px-2 py-1 text-blue-200/80 transition hover:bg-white/10 hover:text-white"
+            >
+              <X size={14} />
+              حذف فیلتر
+            </button>
+          </div>
+        )}
+
         {loadError && (
           <p className="rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
             {loadError}
@@ -266,14 +325,16 @@ const Dashboard = () => {
             LIST
         ================================================== */}
         <div className="flex flex-col gap-2">
-          {!loading && results.length === 0 && !loadError && (
+          {!loading && visibleResults.length === 0 && !loadError && (
             <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.02] py-16 text-white/40">
               <Search size={28} />
-              <p className="text-sm">مهمانی پیدا نشد</p>
+              <p className="text-sm">
+                {activeFilter !== "all" ? "کسی با این فیلتر پیدا نشد" : "مهمانی پیدا نشد"}
+              </p>
             </div>
           )}
 
-          {results.map((p) => (
+          {visibleResults.map((p) => (
             <GuestRow
               key={p.id}
               participant={p}
@@ -302,6 +363,9 @@ const Dashboard = () => {
 
 /* ============================================================
    STAT CARD
+   وقتی clickable=true باشه، کل کارت قابل کلیک میشه و اگه active
+   باشه یه حالت هایلایت (رینگ آبی) می‌گیره تا مشخص باشه فیلتر
+   فعلاً همینه.
 ============================================================ */
 
 const StatCard = ({
@@ -309,20 +373,54 @@ const StatCard = ({
   label,
   value,
   accent,
+  clickable,
+  active,
+  onClick,
 }: {
   icon: ReactNode;
   label: string;
   value: number;
   accent?: boolean;
-}) => (
-  <div className="flex flex-col gap-1 rounded-2xl border border-white/10 bg-white/[0.03] p-3.5">
-    <div className={`flex items-center gap-1.5 text-xs ${accent ? "text-emerald-400" : "text-white/50"}`}>
-      {icon}
-      <span>{label}</span>
-    </div>
-    <strong className="text-2xl font-bold">{value}</strong>
-  </div>
-);
+  clickable?: boolean;
+  active?: boolean;
+  onClick?: () => void;
+}) => {
+  const baseClasses =
+    "flex flex-col gap-1 rounded-2xl border p-3.5 text-right transition";
+
+  const stateClasses = active
+    ? "border-blue-400/70 bg-blue-500/10 ring-1 ring-blue-400/40"
+    : "border-white/10 bg-white/[0.03]";
+
+  const interactiveClasses = clickable
+    ? "cursor-pointer hover:border-white/25 hover:bg-white/[0.06] active:scale-[0.98]"
+    : "";
+
+  const content = (
+    <>
+      <div className={`flex items-center gap-1.5 text-xs ${accent ? "text-emerald-400" : "text-white/50"}`}>
+        {icon}
+        <span>{label}</span>
+      </div>
+      <strong className="text-2xl font-bold">{value}</strong>
+    </>
+  );
+
+  if (clickable) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        aria-pressed={active}
+        className={`${baseClasses} ${stateClasses} ${interactiveClasses}`}
+      >
+        {content}
+      </button>
+    );
+  }
+
+  return <div className={`${baseClasses} ${stateClasses}`}>{content}</div>;
+};
 
 /* ============================================================
    GUEST ROW
