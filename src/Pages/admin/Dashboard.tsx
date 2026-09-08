@@ -146,8 +146,8 @@ const Dashboard = () => {
           err instanceof ApiError
             ? err.message
             : mode === "check-in"
-            ? "ثبت ورود انجام نشد. دوباره تلاش کنید."
-            : "لغو ورود انجام نشد. دوباره تلاش کنید."
+              ? "ثبت ورود انجام نشد. دوباره تلاش کنید."
+              : "لغو ورود انجام نشد. دوباره تلاش کنید."
         );
       } finally {
         setBusyIds((prev) => {
@@ -340,7 +340,8 @@ const GuestRow = ({
   busy: boolean;
   onToggle: () => void;
 }) => {
-  const { name, is_vip, checked_in } = participant;
+  const { name, is_vip, checked_in, org_unit } = participant;
+  const is_segal = typeof org_unit === "string" && org_unit.includes("سگان");
 
   return (
     <div className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3.5 transition hover:border-white/20">
@@ -348,9 +349,14 @@ const GuestRow = ({
         <span className="truncate text-base font-medium text-white">{name}</span>
 
         {is_vip && (
-          <span className="flex shrink-0 items-center gap-1 rounded-full border border-purple-400/40 bg-purple-500/10 px-2 py-0.5 text-[11px] font-semibold text-purple-300">
+          <span className="flex shrink-0 items-center gap-1 rounded-full border border-lime-400/50 bg-lime-500/10 px-2 py-0.5 text-[11px] font-semibold text-lime-300">
             <Crown size={12} />
             VIP
+          </span>
+        )}
+        {!is_vip && is_segal && (
+          <span className="flex shrink-0 items-center gap-1 rounded-full border border-purple-400/40 bg-purple-500/10 px-2 py-0.5 text-[11px] font-semibold text-purple-300">
+            سگال
           </span>
         )}
       </div>
@@ -360,10 +366,9 @@ const GuestRow = ({
         disabled={busy}
         className={`
           flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition
-          ${
-            checked_in
-              ? "border-emerald-400/60 bg-emerald-500/20 text-emerald-400 hover:border-red-400/50 hover:bg-red-500/10 hover:text-red-400"
-              : "border-white/15 bg-white/5 text-white/50 hover:border-emerald-400/50 hover:bg-emerald-500/10 hover:text-emerald-400"
+          ${checked_in
+            ? "border-emerald-400/60 bg-emerald-500/20 text-emerald-400 hover:border-red-400/50 hover:bg-red-500/10 hover:text-red-400"
+            : "border-white/15 bg-white/5 text-white/50 hover:border-emerald-400/50 hover:bg-emerald-500/10 hover:text-emerald-400"
           }
           disabled:pointer-events-none disabled:opacity-70
         `}
@@ -445,11 +450,18 @@ const ConfirmActionDialog = ({
         </div>
 
         {participant.is_vip && (
-          <div className="mb-4 flex items-center gap-1.5 rounded-xl border border-purple-400/30 bg-purple-500/10 px-3 py-2 text-xs font-semibold text-purple-300">
-            <Crown size={13} />
-            این مهمان VIP است
-          </div>
-        )}
+  <div className="mb-4 flex items-center gap-1.5 rounded-xl border border-lime-400/40 bg-lime-500/10 px-3 py-2 text-xs font-semibold text-lime-300">
+    <Crown size={13} />
+    این مهمان VIP است
+  </div>
+)}
+{!participant.is_vip &&
+  typeof participant.org_unit === "string" &&
+  participant.org_unit.includes("سگان") && (
+    <div className="mb-4 flex items-center gap-1.5 rounded-xl border border-purple-400/30 bg-purple-500/10 px-3 py-2 text-xs font-semibold text-purple-300">
+      این مهمان سگال است
+    </div>
+)}
 
         <label className="mb-4 flex cursor-pointer items-center gap-2 text-xs text-white/50">
           <input
@@ -470,11 +482,10 @@ const ConfirmActionDialog = ({
           </button>
           <button
             onClick={onConfirm}
-            className={`h-11 flex-1 rounded-xl text-sm font-bold text-white transition ${
-              isUndo
+            className={`h-11 flex-1 rounded-xl text-sm font-bold text-white transition ${isUndo
                 ? "bg-red-500 hover:bg-red-400"
                 : "bg-emerald-500 hover:bg-emerald-400"
-            }`}
+              }`}
           >
             {isUndo ? (
               <span className="flex items-center justify-center gap-1.5">
