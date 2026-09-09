@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, LogOut, Crown, Check, Loader2, Users, UserCheck, X, Undo2 } from "lucide-react";
 import {
@@ -14,6 +14,7 @@ import {
 } from "../../lib/api";
 
 const SEARCH_DEBOUNCE_MS = 300;
+const PAGE_SIZE = 50;
 
 // اگه اپراتور چک‌باکس «دیگه نشون نده» رو تو دیالوگ بزنه، این تو localStorage
 // ذخیره می‌شه و از اون به بعد چک‌این/لغو بدون دیالوگ و مستقیم انجام می‌شه.
@@ -49,11 +50,29 @@ type PendingAction = {
 // "all" یعنی هیچ فیلتری فعال نیست (حالت پیش‌فرض).
 type StatFilter = "all" | "checked_in" | "vip_total" | "vip_checked_in";
 
+// هر فیلتر رو به پارامترهای واقعی API نگاشت می‌کنه. این تنها جایی است که
+// معنی هر فیلتر تعریف می‌شه، پس اگه یه فیلتر جدید لازم شد فقط همین‌جا و
+// آرایه‌ی کارت‌های پایین کافیه تغییر کنن.
+const FILTER_PARAMS: Record<StatFilter, { checked_in?: boolean; is_vip?: boolean }> = {
+  all: {},
+  checked_in: { checked_in: true },
+  vip_total: { is_vip: true },
+  vip_checked_in: { is_vip: true, checked_in: true },
+};
+
+const FILTER_LABEL: Record<StatFilter, string> = {
+  all: "",
+  checked_in: "ورود ثبت‌شده",
+  vip_total: "کل VIP",
+  vip_checked_in: "ورود VIP",
+};
+
 const Dashboard = () => {
   const navigate = useNavigate();
 
   const [search, setSearch] = useState("");
   const [results, setResults] = useState<AdminParticipant[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -74,20 +93,30 @@ const Dashboard = () => {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const requestSeq = useRef(0);
 
-  // ---------- بارگذاری اولیه‌ی لیست (بدون سرچ) + آمار ----------
-  const runSearch = useCallback((q: string) => {
+  // ---------- بارگذاری لیست: هم سرچ متنی و هم فیلتر آماری با هم به
+  // سرور فرستاده می‌شن (AND می‌شن)، پس همیشه از دیتابیس واقعی می‌خونیم
+  // نه از نتایج قبلی. صفحه‌بندی رو فعلاً به همون ۵۰ تای اول محدود
+  // می‌کنیم و مجموع واقعی رو از X-Total-Count نشون می‌دیم.
+  const runSearch = useCallback((q: string, filter: StatFilter) => {
     const seq = ++requestSeq.current;
     setLoading(true);
     setLoadError(null);
 
-    searchParticipants(q || undefined, 50)
-      .then((data) => {
+    searchParticipants({
+      q: q || undefined,
+      ...FILTER_PARAMS[filter],
+      limit: PAGE_SIZE,
+      offset: 0,
+    })
+      .then(({ items, total }) => {
         if (seq !== requestSeq.current) return; // پاسخ قدیمی، نادیده بگیر
-        setResults(data);
+        setResults(items);
+        setTotalCount(total);
       })
       .catch((err) => {
         if (seq !== requestSeq.current) return;
         setResults([]);
+        setTotalCount(0);
         setLoadError(
           err instanceof ApiError ? err.message : "خطا در ارتباط با سرور. دوباره تلاش کنید."
         );
@@ -106,22 +135,24 @@ const Dashboard = () => {
       });
   }, []);
 
+  // بارگذاری اولیه
   useEffect(() => {
-    runSearch("");
+    runSearch("", "all");
     refreshStats();
-  }, [runSearch, refreshStats]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  // ---------- سرچ زنده با debounce ----------
+  // ---------- سرچ زنده با debounce؛ با تغییر فیلتر هم دوباره اجرا می‌شه ----------
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
-      runSearch(search.trim());
+      runSearch(search.trim(), activeFilter);
     }, SEARCH_DEBOUNCE_MS);
 
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [search, runSearch]);
+  }, [search, activeFilter, runSearch]);
 
   // ---------- خروج از حساب ----------
   const handleLogout = () => {
@@ -136,17 +167,31 @@ const Dashboard = () => {
       setBusyIds((prev) => new Set(prev).add(participant.id));
 
       try {
+        let updated: AdminParticipant;
         if (mode === "check-in") {
           const res = await checkIn(participant.id);
-          setResults((prev) =>
-            prev.map((p) => (p.id === participant.id ? res.participant : p))
-          );
+          updated = res.participant;
         } else {
           const res = await undoCheckIn(participant.id);
-          setResults((prev) =>
-            prev.map((p) => (p.id === participant.id ? res.participant : p))
-          );
+          updated = res.participant;
         }
+
+        setResults((prev) => {
+          // اگه فیلتری فعاله و وضعیت جدید دیگه با اون فیلتر جور نیست
+          // (مثلاً تو فیلتر «ورود ثبت‌شده» لغو کردیم)، ردیف رو از لیست
+          // فعلی حذف کن؛ در غیر این صورت فقط داده‌ش رو آپدیت کن.
+          const stillMatches = matchesFilter(updated, activeFilter);
+          if (!stillMatches) {
+            return prev.filter((p) => p.id !== participant.id);
+          }
+          return prev.map((p) => (p.id === participant.id ? updated : p));
+        });
+
+        setTotalCount((prev) => {
+          const stillMatches = matchesFilter(updated, activeFilter);
+          return stillMatches ? prev : Math.max(0, prev - 1);
+        });
+
         refreshStats();
       } catch (err) {
         setLoadError(
@@ -164,7 +209,7 @@ const Dashboard = () => {
         });
       }
     },
-    [refreshStats]
+    [refreshStats, activeFilter]
   );
 
   // ---------- کلیک روی دکمه‌ی تیک: بسته به وضعیت فعلی، درخواست چک‌این یا لغو ----------
@@ -195,32 +240,12 @@ const Dashboard = () => {
     setSkipConfirmPref(checked);
   };
 
-  // ---------- کلیک روی کارت‌های آمار: toggle فیلتر ----------
+  // ---------- کلیک روی کارت‌های آمار: toggle فیلتر (سرچ با useEffect بالا دوباره اجرا می‌شه) ----------
   const handleStatClick = (filter: StatFilter) => {
     setActiveFilter((prev) => (prev === filter ? "all" : filter));
   };
 
-  // ---------- اعمال فیلتر روی نتایج فعلی (client-side) ----------
-  const visibleResults = useMemo(() => {
-    switch (activeFilter) {
-      case "checked_in":
-        return results.filter((p) => p.checked_in);
-      case "vip_total":
-        return results.filter((p) => p.is_vip);
-      case "vip_checked_in":
-        return results.filter((p) => p.is_vip && p.checked_in);
-      case "all":
-      default:
-        return results;
-    }
-  }, [results, activeFilter]);
-
-  const filterLabel: Record<StatFilter, string> = {
-    all: "",
-    checked_in: "ورود ثبت‌شده",
-    vip_total: "کل VIP",
-    vip_checked_in: "ورود VIP",
-  };
+  const clearFilter = () => setActiveFilter("all");
 
   return (
     <div dir="rtl" className="min-h-dvh w-full bg-[#03071a] text-white">
@@ -247,7 +272,7 @@ const Dashboard = () => {
       <main className="mx-auto flex w-[calc(100%-32px)] max-w-4xl flex-col gap-5 py-6">
         {/* ==================================================
             STATS — هر کارت به‌جز «کل مهمان‌ها» قابل کلیک است و
-            به‌عنوان فیلتر روی لیست پایین عمل می‌کند
+            به‌عنوان فیلتر سمت سرور روی لیست پایین عمل می‌کند
         ================================================== */}
         {stats && (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -300,19 +325,28 @@ const Dashboard = () => {
           {loading && <Loader2 size={20} className="shrink-0 animate-spin text-white/40" />}
         </div>
 
-        {/* نشونه‌ی فیلتر فعال، با دکمه‌ی پاک کردن سریع */}
+        {/* نشونه‌ی فیلتر فعال، با تعداد کل واقعی (از سرور) و دکمه‌ی پاک کردن سریع */}
         {activeFilter !== "all" && (
           <div className="flex items-center gap-2 rounded-xl border border-blue-400/30 bg-blue-500/10 px-3.5 py-2 text-xs text-blue-200">
-            <span>فیلتر فعال: {filterLabel[activeFilter]}</span>
-            <span className="text-blue-300/70">({visibleResults.length} نفر)</span>
+            <span>فیلتر فعال: {FILTER_LABEL[activeFilter]}</span>
+            <span className="text-blue-300/70">({totalCount} نفر)</span>
             <button
-              onClick={() => setActiveFilter("all")}
+              onClick={clearFilter}
               className="mr-auto flex items-center gap-1 rounded-lg px-2 py-1 text-blue-200/80 transition hover:bg-white/10 hover:text-white"
             >
               <X size={14} />
               حذف فیلتر
             </button>
           </div>
+        )}
+
+        {/* وقتی نتایج بیشتر از یه صفحه باشه، بهش اشاره می‌کنیم تا اپراتور
+            گیج نشه که چرا مثلاً از ۲۰۰ تا VIP فقط ۵۰ تا رو می‌بینه —
+            برای پیدا کردن بقیه کافیه تو سرچ محدودترش کنه. */}
+        {!loading && totalCount > results.length && (
+          <p className="-mt-1 text-xs text-white/40">
+            {results.length} از {totalCount} نتیجه نشون داده شده. برای باریک‌تر کردن نتیجه، از جستجو هم استفاده کنید.
+          </p>
         )}
 
         {loadError && (
@@ -325,7 +359,7 @@ const Dashboard = () => {
             LIST
         ================================================== */}
         <div className="flex flex-col gap-2">
-          {!loading && visibleResults.length === 0 && !loadError && (
+          {!loading && results.length === 0 && !loadError && (
             <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.02] py-16 text-white/40">
               <Search size={28} />
               <p className="text-sm">
@@ -334,7 +368,7 @@ const Dashboard = () => {
             </div>
           )}
 
-          {visibleResults.map((p) => (
+          {results.map((p) => (
             <GuestRow
               key={p.id}
               participant={p}
@@ -360,6 +394,20 @@ const Dashboard = () => {
     </div>
   );
 };
+
+// آیا این مهمون هنوز با فیلتر فعلی جور درمی‌آد؟ برای تصمیم‌گیری بعد از
+// چک‌این/لغو استفاده می‌شه، تا اگه دیگه جور نبود از لیست حذفش کنیم
+// بدون نیاز به یه رفرش کامل از سرور.
+function matchesFilter(participant: AdminParticipant, filter: StatFilter): boolean {
+  const required = FILTER_PARAMS[filter];
+  if (required.checked_in !== undefined && participant.checked_in !== required.checked_in) {
+    return false;
+  }
+  if (required.is_vip !== undefined && participant.is_vip !== required.is_vip) {
+    return false;
+  }
+  return true;
+}
 
 /* ============================================================
    STAT CARD
