@@ -235,27 +235,45 @@ export async function searchParticipants(
   params: SearchParticipantsParams = {}
 ): Promise<SearchParticipantsResult> {
   const { q, checked_in, is_vip, limit = 50, offset = 0 } = params;
-
-  const query = new URLSearchParams();
-  if (q) query.set("q", q);
-  // فقط وقتی که واقعاً مقدار داده شده باشه ست کن؛ چون undefined یعنی
-  // "فیلتر نکن" و نباید اصلاً تو query ظاهر بشه.
-  if (checked_in !== undefined) query.set("checked_in", String(checked_in));
-  if (is_vip !== undefined) query.set("is_vip", String(is_vip));
-  query.set("limit", String(limit));
-  query.set("offset", String(offset));
-
-  const { data, headers } = await requestWithHeaders<AdminParticipant[]>(
-    `/api/event/participants?${query.toString()}`,
-    { auth: true }
-  );
-
-  const totalHeader = headers.get("X-Total-Count");
-  // اگه به هر دلیلی هدر نبود (مثلاً پروکسی حذفش کرده)، حداقل طول همین
-  // صفحه رو به‌عنوان fallback در نظر بگیر تا UI نشکنه.
-  const total = totalHeader !== null ? Number(totalHeader) : data.length;
-
-  return { items: data, total: Number.isFinite(total) ? total : data.length };
+ 
+  const fetchPage = async (pageOffset: number, pageLimit: number) => {
+    const query = new URLSearchParams();
+    if (q) query.set("q", q);
+    if (checked_in !== undefined) query.set("checked_in", String(checked_in));
+    if (is_vip !== undefined) query.set("is_vip", String(is_vip));
+    query.set("limit", String(pageLimit));
+    query.set("offset", String(pageOffset));
+ 
+    const { data, headers } = await requestWithHeaders<AdminParticipant[]>(
+      `/api/event/participants?${query.toString()}`,
+      { auth: true }
+    );
+ 
+    const totalHeader = headers.get("X-Total-Count");
+    const total = totalHeader !== null ? Number(totalHeader) : data.length;
+ 
+    return { items: data, total: Number.isFinite(total) ? total : data.length };
+  };
+ 
+  // صفحه‌ی اول با همون limit/offset درخواستی
+  const first = await fetchPage(offset, limit);
+ 
+  let items = first.items;
+  const total = first.total;
+ 
+  // اگه صدا‌کننده صریحاً offset/limit سفارشی خواسته (یعنی خودش
+  // صفحه‌بندی می‌کنه)، دخالت نکن؛ فقط وقتی از حالت پیش‌فرض (offset=0)
+  // صدا زده شده همه‌ی صفحات رو خودکار جمع کن.
+  if (offset === 0 && total > items.length) {
+    const remainingRequests: Promise<{ items: AdminParticipant[]; total: number }>[] = [];
+    for (let nextOffset = items.length; nextOffset < total; nextOffset += limit) {
+      remainingRequests.push(fetchPage(nextOffset, limit));
+    }
+    const restPages = await Promise.all(remainingRequests);
+    items = items.concat(...restPages.map((p) => p.items));
+  }
+ 
+  return { items, total };
 }
 
 export function getParticipant(invitationId: number) {
